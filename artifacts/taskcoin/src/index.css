@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+
+  /* Dark mode crypto theme */
+  --color-background: 240 10% 3.9%;
+  --color-foreground: 0 0% 98%;
+  
+  /* Primary: Rich Gold */
+  --color-primary: 47.9 95.8% 53.1%;
+  --color-primary-foreground: 26 83.3% 14.1%;
+  
+  /* Secondary: Deep slate */
+  --color-secondary: 240 3.7% 15.9%;
+  --color-secondary-foreground: 0 0% 98%;
+  
+  /* Muted: Lighter slate */
+  --color-muted: 240 3.7% 15.9%;
+  --color-muted-foreground: 240 5% 64.9%;
+  
+  /* Accent: Neon cyan/teal for crypto accents */
+  --color-accent: 175 60% 45%;
+  --color-accent-foreground: 0 0% 98%;
+  
+  /* Destructive: Soft red */
+  --color-destructive: 0 84.2% 60.2%;
+  --color-destructive-foreground: 0 0% 98%;
+
+  /* Borders and Cards */
+  --color-border: 240 3.7% 15.9%;
+  --color-input: 240 3.7% 15.9%;
+  --color-ring: 47.9 95.8% 53.1%;
+  
+  --color-card: 240 10% 6%;
+  --color-card-foreground: 0 0% 98%;
+  
+  --color-popover: 240 10% 6%;
+  --color-popover-foreground: 0 0% 98%;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased font-sans selection:bg-primary/30;
+    /* Subtle background texture/gradient for depth */
+    background-image: 
+      radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 100% 100%, hsl(var(--accent) / 0.03) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-bold;
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Glassmorphism utilities */
+@layer utilities {
+  .glass {
+    @apply bg-card/60 backdrop-blur-md border border-white/10;
+  }
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-lg border border-white/5 shadow-xl shadow-black/40;
+  }
+  .text-glow {
+    text-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+  .box-glow {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.15);
+  }
+}

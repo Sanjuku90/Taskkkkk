@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "Smooth page transitions and micro-interactions"
+  "date-fns": "For formatting dates and countdowns"
+  "recharts": "For admin dashboard statistics visualization"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to safely merge Tailwind classes"
+
+images:
+  - path: "artifacts/taskcoin/public/images/hero-bg.png"
+    description: "Abstract 3D dark crypto coins floating in a sleek neon blue and gold cyber environment, dark background, premium financial quality"
+    aspect_ratio: "16:9"
+  - path: "artifacts/taskcoin/public/images/logo.png"
+    description: "Minimalist geometric gold coin logo on dark transparent background, sleek, modern"
+    aspect_ratio: "1:1"
+
+notes:
+  - All API requests rely on hooks from @workspace/api-client-react
+  - Auth uses session cookies, handled implicitly by customFetch
+  - Admin access is determined by user.isAdmin boolean

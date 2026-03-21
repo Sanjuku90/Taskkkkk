@@ -1,0 +1,115 @@
+
+⸻
+
+💎 Nom du site
+
+💡 Nom proposé : “TaskCoin”
+	•	Task = tâches quotidiennes
+	•	Coin = crypto (USDT/TRX)
+	•	Simple, mémorable et professionnel
+
+⸻
+
+💻 Concept complet de TaskCoin
+
+1️⃣ Objectif du site
+	•	Plateforme d’investissement par tâches quotidiennes
+	•	L’utilisateur dépose de l’argent en crypto (USDT TRC20 / TRX)
+	•	Chaque plan a :
+	•	un nombre fixe de tâches par jour
+	•	un gain fixe par tâche, retirable immédiatement
+	•	Les tâches se réinitialisent chaque jour (compte à rebours visible)
+	•	7 plans progressifs
+	•	Inscription / connexion par mail et mot de passe
+
+⸻
+
+2️⃣ Plans utilisateur (exactement ton idée)
+
+Plan	Dépôt	Tâches/jour	Gain/tâche	Total/jour
+1 Starter	45$	3	10$	30$
+2 Basic	60$	4	13$	52$
+3 Silver	80$	4	18$	72$
+4 Gold	120$	5	25$	125$
+5 Platinum	180$	5	35$	175$
+6 Diamond	250$	6	50$	300$
+7 VIP Elite	400$	7	80$	560$
+
+	•	Gains immédiatement retirables
+	•	Tâches se réinitialisent chaque jour (compte à rebours)
+	•	Compteur basé sur heure réelle, fiable même après veille
+
+⸻
+
+3️⃣ Inscription / connexion
+	•	Email + mot de passe
+	•	Vérification mail possible
+	•	Après connexion → accès au dashboard utilisateur
+
+⸻
+
+4️⃣ Dashboard utilisateur
+	1.	Solde et plan actif
+	2.	Liste des tâches journalières + bouton “Compléter tâche”
+	3.	Compte à rebours avant réinitialisation
+	4.	Dépôt / Retrait crypto (USDT TRC20 / TRX)
+	5.	Historique complet : tâches, dépôts, retraits
+
+⸻
+
+5️⃣ Dépôts et retraits
+	•	Cryptos : USDT TRC20 / TRX
+	•	Adresse principale : TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS
+	•	Dépôts → validation admin
+	•	Retraits → demande utilisateur → validation admin
+
+⸻
+
+6️⃣ Compte à rebours
+	•	Affiche le temps restant pour réinitialisation des tâches
+	•	Recalcul automatique sur heure réelle → fiable même si serveur en veille
+	•	À 0 : tâches réinitialisées et disponibles
+
+⸻
+
+7️⃣ Espace admin
+	•	Dashboard global : utilisateurs, dépôts, retraits, statut du site
+	•	Gestion utilisateurs : suspendre/réactiver, ajouter bonus, consulter historique
+	•	Validation transactions : dépôts et retraits
+	•	Maintenance : activer/désactiver le site, afficher message, bloquer tâches ou retraits
+
+⸻
+
+8️⃣ Sécurité
+	•	Mot de passe hashé
+	•	Historique complet pour audit
+	•	Protection contre multi-comptes / fraude
+	•	Option génération d’adresse unique pour dépôts
+
+⸻
+
+9️⃣ Engagement utilisateur
+	•	Compte à rebours → fidélisation quotidienne
+	•	Gains immédiats → motivation forte
+	•	Bonus et tâches spéciales → engagement
+
+⸻
+
+🔟 Technique / backend
+	•	Base de données : utilisateurs, tâches, retraits, dépôts
+	•	Backend : Node.js / PHP / Python
+	•	Calcul du solde et réinitialisation basé sur heure réelle
+	•	Compte à rebours fiable même sur serveur gratuit
+
+⸻
+
+🔥 Résumé final
+
+TaskCoin est donc :
+	•	Une plateforme crypto USDT/TRX
+	•	7 plans progressifs
+	•	Tâches quotidiennes avec gains immédiats
+	•	Compte à rebours pour réinitialisation
+	•	Dashboard utilisateur simple
+	•	Espace admin complet (transactions, bonus, maintenance)
+	•	Inscription / connexion par mail et mot de passe
