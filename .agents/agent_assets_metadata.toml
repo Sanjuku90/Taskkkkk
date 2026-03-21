@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "VJ3yFNR3ek54GgBYtR_5I"
+uri = "file://attached_assets/generated_images/taskcoin_logo.png"
+type = "image"
+title = "Logo TaskCoin"
