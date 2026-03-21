@@ -1,0 +1,88 @@
+Cloning from https://github.com/Sanjuku90/Taskkkkk
+Menu
+==> Checking out commit a75610165f5dadde33a1c9c65f531bba9df05c0d in branch master
+==> Using Node.js version 22.22.0 (default)
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install -g pnpm &&
+pnpm install --frozen-lockfile &&
+BASE_PATH=/ PORT=3000 pnpm --filter @workspace/taskcoin run build &&
+pnpm --filter @workspace/api-server run build &&
+cp -r artifacts/taskcoin/dist/public artifacts/api-server/dist/public
+'...
+added 1 package in 4s
+1 package is looking for funding
+  run `npm fund` for details
+> @workspace/taskcoin@0.0.0 build /opt/render/project/src/artifacts/taskcoin
+> vite build --config vite.config.ts
+vite v7.3.1 building client environment for production...
+transforming...
+src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+✓ 2183 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/index.html                   0.73 kB │ gzip:   0.41 kB
+dist/public/assets/index-DqUqzPdf.css   97.70 kB │ gzip:  16.56 kB
+dist/public/assets/index-CmF4EF29.js   520.19 kB │ gzip: 161.23 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.00s
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+  dist/index.mjs                       2.3mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   3.9mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           203.9kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 467ms
+==> Uploading build...
+==> Uploaded in 8.4s. Compression took 14.1s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:225
+      throw new PathError(`Missing parameter name at index ${index}`, str);
+            ^
+PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+    at name (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:225:13)
+    at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:242:62)
+    at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:480:54)
+    at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:438:28)
+    at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+    at Function.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+    at Function.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22)
+    at <anonymous> (/opt/render/project/src/artifacts/api-server/src/app.ts:73:9) {
+  originalPath: '*'
+}
+Node.js v22.22.0
+==> Exited with status 1
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
+==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+==> No open ports detected, continuing to scan...
+==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:225
+      throw new PathError(`Missing parameter name at index ${index}`, str);
+            ^
+PathError [TypeError]: Missing parameter name at index 1: *; visit https://git.new/pathToRegexpError for info
+    at name (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:225:13)
+    at parse (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:242:62)
+    at pathToRegexp (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:480:54)
+    at Object.match (/opt/render/project/src/node_modules/.pnpm/path-to-regexp@8.3.0/node_modules/path-to-regexp/src/index.ts:438:28)
+    at matcher (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:86:23)
+    at new Layer (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/lib/layer.js:93:62)
+    at Function.route (/opt/render/project/src/node_modules/.pnpm/router@2.2.0/node_modules/router/index.js:428:17)
+    at Function.route (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:257:22)
+    at Function.app2.<computed> (/opt/render/project/src/node_modules/.pnpm/express@5.2.1/node_modules/express/lib/application.js:478:22)
+    at <anonymous> (/opt/render/project/src/artifacts/api-server/src/app.ts:73:9) {
+  originalPath: '*'
+}
+Node.js v22.22.0
