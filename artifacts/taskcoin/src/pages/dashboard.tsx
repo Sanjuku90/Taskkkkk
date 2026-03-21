@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout";
 import { useRequireAuth } from "@/hooks/use-auth-wrapper";
 import { useGetMe, useGetPlans, useGetMyTasks, useGetMyTransactions } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@/components/ui-core";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { Wallet, TrendingUp, CheckCircle, ArrowRightLeft, AlertCircle } from "lucide-react";
 

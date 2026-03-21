@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from "
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { SiteSettings } from "@workspace/api-client-react/src/generated/api.schemas";
+type SiteSettings = {
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
+  tasksBlocked: boolean;
+  withdrawalsBlocked: boolean;
+  depositAddress: string;
+};
 
 export default function AdminSettings() {
   useRequireAuth(true);

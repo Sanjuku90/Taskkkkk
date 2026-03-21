@@ -8,6 +8,7 @@ export function useAuth() {
     query: {
       retry: false,
       staleTime: 5 * 60 * 1000,
+      queryKey: getGetMeQueryKey(),
     }
   });
 

@@ -41,7 +41,7 @@ export default function Home() {
                       <ChevronRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
-                  <Link href="/login">
+                  <Link href="/plans">
                     <Button size="lg" variant="glass" className="w-full sm:w-auto">
                       View Plans
                     </Button>
