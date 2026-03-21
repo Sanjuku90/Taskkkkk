@@ -3,6 +3,8 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
+import path from "node:path";
+import { existsSync } from "node:fs";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
@@ -38,6 +40,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const isProd = process.env["NODE_ENV"] === "production";
+
 app.use(session({
   store: new PgSession({
     pool,
@@ -48,13 +52,29 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false,
+    secure: isProd,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
     sameSite: "lax",
   },
 }));
 
+if (isProd) {
+  app.set("trust proxy", 1);
+}
+
 app.use("/api", router);
+
+// Serve frontend static files in production
+if (isProd) {
+  const staticDir = path.join(__dirname, "public");
+  if (existsSync(staticDir)) {
+    app.use(express.static(staticDir));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(staticDir, "index.html"));
+    });
+    logger.info({ staticDir }, "Serving frontend static files");
+  }
+}
 
 export default app;

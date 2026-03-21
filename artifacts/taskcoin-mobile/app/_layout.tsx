@@ -12,8 +12,15 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Configure the API base URL from the environment variable set at build time
+const apiUrl = process.env.EXPO_PUBLIC_API_URL ?? "";
+if (apiUrl) {
+  setBaseUrl(apiUrl);
+}
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
