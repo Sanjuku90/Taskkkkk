@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { db, usersTable, plansTable, taskLogsTable, siteSettingsTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { db, usersTable, plansTable, taskLogsTable, siteSettingsTable, bonusTasksTable, bonusTaskLogsTable } from "@workspace/db";
+import { eq, and, sql, or, isNull } from "drizzle-orm";
 
 const router = Router();
 
@@ -147,6 +147,108 @@ router.post("/:taskId/complete", async (req, res) => {
 
   res.json({
     message: `Task ${taskId} completed! You earned $${gain.toFixed(2)}`,
+    gain,
+    newBalance: Number(updatedUser.balance),
+  });
+});
+
+router.get("/bonus", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const userId = req.session.userId;
+  const now = new Date();
+
+  const bonusTasks = await db.select().from(bonusTasksTable).where(
+    and(
+      eq(bonusTasksTable.isActive, true),
+      or(isNull(bonusTasksTable.expiresAt), sql`${bonusTasksTable.expiresAt} > ${now}`),
+      or(isNull(bonusTasksTable.forUserId), eq(bonusTasksTable.forUserId, userId))
+    )
+  );
+
+  const completedLogs = await db.select().from(bonusTaskLogsTable).where(
+    eq(bonusTaskLogsTable.userId, userId)
+  );
+  const completedIds = new Set(completedLogs.map(l => l.bonusTaskId));
+
+  const result = bonusTasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    reward: Number(t.reward),
+    expiresAt: t.expiresAt?.toISOString() ?? null,
+    completed: completedIds.has(t.id),
+    completedAt: completedLogs.find(l => l.bonusTaskId === t.id)?.completedAt?.toISOString() ?? null,
+  }));
+
+  res.json(result);
+});
+
+router.post("/bonus/:taskId/complete", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const tasksBlocked = await getSetting("tasks_blocked", "false");
+  if (tasksBlocked === "true") {
+    res.status(400).json({ error: "Tasks are currently blocked by admin" });
+    return;
+  }
+
+  const userId = req.session.userId;
+  const bonusTaskId = parseInt(req.params.taskId);
+  if (isNaN(bonusTaskId)) {
+    res.status(400).json({ error: "Invalid bonus task ID" });
+    return;
+  }
+
+  const now = new Date();
+  const [bonusTask] = await db.select().from(bonusTasksTable).where(
+    and(
+      eq(bonusTasksTable.id, bonusTaskId),
+      eq(bonusTasksTable.isActive, true),
+      or(isNull(bonusTasksTable.expiresAt), sql`${bonusTasksTable.expiresAt} > ${now}`),
+      or(isNull(bonusTasksTable.forUserId), eq(bonusTasksTable.forUserId, userId))
+    )
+  ).limit(1);
+
+  if (!bonusTask) {
+    res.status(404).json({ error: "Bonus task not found or not available" });
+    return;
+  }
+
+  const alreadyDone = await db.select().from(bonusTaskLogsTable).where(
+    and(
+      eq(bonusTaskLogsTable.bonusTaskId, bonusTaskId),
+      eq(bonusTaskLogsTable.userId, userId)
+    )
+  ).limit(1);
+
+  if (alreadyDone.length > 0) {
+    res.status(400).json({ error: "Bonus task already completed" });
+    return;
+  }
+
+  const gain = Number(bonusTask.reward);
+
+  await db.insert(bonusTaskLogsTable).values({
+    bonusTaskId,
+    userId,
+    gain: String(gain),
+  });
+
+  await db.update(usersTable).set({
+    balance: sql`${usersTable.balance} + ${gain}`,
+  }).where(eq(usersTable.id, userId));
+
+  const [updatedUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+
+  res.json({
+    message: `Bonus task completed! You earned $${gain.toFixed(2)}`,
     gain,
     newBalance: Number(updatedUser.balance),
   });

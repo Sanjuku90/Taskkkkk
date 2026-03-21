@@ -3,10 +3,10 @@ import { useRequireAuth } from "@/hooks/use-auth-wrapper";
 import { useGetMyTasks, useCompleteTask, getGetMyTasksQueryKey, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, Button, Badge } from "@/components/ui-core";
 import { formatCurrency } from "@/lib/utils";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle2, CircleDashed, Gift } from "lucide-react";
+import { Clock, CheckCircle2, CircleDashed, Gift, Star, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
@@ -33,12 +33,61 @@ function CountdownTimer({ initialSeconds }: { initialSeconds: number }) {
   );
 }
 
+interface BonusTask {
+  id: number;
+  title: string;
+  description: string | null;
+  reward: number;
+  expiresAt: string | null;
+  completed: boolean;
+  completedAt: string | null;
+}
+
+function useBonusTasks() {
+  return useQuery<BonusTask[]>({
+    queryKey: ["bonus-tasks"],
+    queryFn: async () => {
+      const res = await fetch("/api/tasks/bonus");
+      if (!res.ok) throw new Error("Failed to fetch bonus tasks");
+      return res.json();
+    },
+  });
+}
+
+function useCompleteBonusTask() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await fetch(`/api/tasks/bonus/${taskId}/complete`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to complete bonus task");
+      }
+      return res.json() as Promise<{ message: string; gain: number; newBalance: number }>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["bonus-tasks"] });
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      toast({
+        title: "Bonus Task Completed!",
+        description: `You earned ${formatCurrency(data.gain)}. New balance: ${formatCurrency(data.newBalance)}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed", description: error?.message || "Could not complete bonus task.", variant: "destructive" });
+    },
+  });
+}
+
 export default function Tasks() {
   const { user } = useRequireAuth();
   const { data: tasksData, isLoading } = useGetMyTasks();
+  const { data: bonusTasks, isLoading: bonusLoading } = useBonusTasks();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [completingId, setCompletingId] = useState<number | null>(null);
+  const [completingBonusId, setCompletingBonusId] = useState<number | null>(null);
 
   const completeMutation = useCompleteTask({
     mutation: {
@@ -58,9 +107,20 @@ export default function Tasks() {
     }
   });
 
+  const completeBonusMutation = useCompleteBonusTask();
+
   const handleComplete = (taskId: number) => {
     setCompletingId(taskId);
     completeMutation.mutate({ taskId });
+  };
+
+  const handleCompleteBonus = async (taskId: number) => {
+    setCompletingBonusId(taskId);
+    try {
+      await completeBonusMutation.mutateAsync(taskId);
+    } finally {
+      setCompletingBonusId(null);
+    }
   };
 
   if (isLoading) return <AppLayout><div className="flex justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div></AppLayout>;
@@ -78,6 +138,12 @@ export default function Tasks() {
             <Button size="lg" className="w-full">View Investment Plans</Button>
           </Link>
         </div>
+
+        {bonusTasks && bonusTasks.length > 0 && (
+          <div className="mt-12 max-w-2xl mx-auto">
+            <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
+          </div>
+        )}
       </AppLayout>
     );
   }
@@ -132,8 +198,8 @@ export default function Tasks() {
         </motion.div>
       )}
 
-      <div className="grid gap-4">
-        {tasksData.tasks.map((task, idx) => (
+      <div className="grid gap-4 mb-10">
+        {tasksData.tasks.map((task) => (
           <Card key={task.id} className={`transition-all duration-300 ${task.completed ? 'opacity-60 bg-zinc-900 border-white/5' : 'hover:border-primary/30'}`}>
             <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -147,7 +213,6 @@ export default function Tasks() {
                   <p className="text-sm text-zinc-400">Reward: <span className="text-primary font-bold">{formatCurrency(task.gain)}</span></p>
                 </div>
               </div>
-              
               <div className="w-full sm:w-auto flex justify-end">
                 {task.completed ? (
                   <Badge variant="success" className="px-4 py-2 text-sm">Completed at {task.completedAt ? new Date(task.completedAt).toLocaleTimeString() : ''}</Badge>
@@ -166,6 +231,78 @@ export default function Tasks() {
           </Card>
         ))}
       </div>
+
+      {!bonusLoading && bonusTasks && bonusTasks.length > 0 && (
+        <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
+      )}
     </AppLayout>
+  );
+}
+
+function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: {
+  bonusTasks: BonusTask[];
+  onComplete: (id: number) => void;
+  completingId: number | null;
+  suspended: boolean;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+          <Star className="w-5 h-5 text-amber-400" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-display font-bold text-white">Special Bonus Tasks</h2>
+          <p className="text-sm text-zinc-400">Limited-time tasks with extra rewards</p>
+        </div>
+      </div>
+
+      <div className="grid gap-4">
+        {bonusTasks.map((task) => (
+          <motion.div
+            key={task.id}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card className={`border-amber-500/20 transition-all duration-300 ${task.completed ? 'opacity-60 bg-zinc-900 border-white/5' : 'hover:border-amber-500/40 bg-gradient-to-r from-amber-500/5 to-transparent'}`}>
+              <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  {task.completed ? (
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500 shrink-0" />
+                  ) : (
+                    <Zap className="w-8 h-8 text-amber-400 shrink-0" />
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-bold text-lg text-white">{task.title}</h4>
+                      <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-xs">BONUS</Badge>
+                    </div>
+                    {task.description && <p className="text-sm text-zinc-400 mb-1">{task.description}</p>}
+                    <p className="text-sm text-zinc-400">Reward: <span className="text-amber-400 font-bold">{formatCurrency(task.reward)}</span></p>
+                    {task.expiresAt && !task.completed && (
+                      <p className="text-xs text-zinc-500 mt-1">Expires: {new Date(task.expiresAt).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                </div>
+                <div className="w-full sm:w-auto flex justify-end">
+                  {task.completed ? (
+                    <Badge variant="success" className="px-4 py-2 text-sm">Completed</Badge>
+                  ) : (
+                    <Button
+                      className="w-full sm:w-auto px-8 bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                      onClick={() => onComplete(task.id)}
+                      isLoading={completingId === task.id}
+                      disabled={completingId !== null || suspended}
+                    >
+                      Claim Bonus
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </div>
   );
 }

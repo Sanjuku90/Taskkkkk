@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { db, usersTable, plansTable, transactionsTable, taskLogsTable, siteSettingsTable } from "@workspace/db";
-import { eq, desc, sql, sum } from "drizzle-orm";
+import { db, usersTable, plansTable, transactionsTable, taskLogsTable, siteSettingsTable, bonusTasksTable, bonusTaskLogsTable } from "@workspace/db";
+import { eq, desc, sql, sum, and, or, isNull } from "drizzle-orm";
 import { SuspendUserBody, AddBonusBody, ValidateTransactionBody, UpdateAdminSettingsBody } from "@workspace/api-zod";
-
 const router = Router();
 
 async function requireAdmin(req: any, res: any): Promise<boolean> {
@@ -76,6 +75,7 @@ router.get("/users", async (req, res) => {
       isSuspended: u.isSuspended,
       activePlanId: u.activePlanId,
       planName: u.activePlanId ? (planMap.get(u.activePlanId) ?? null) : null,
+      registrationIp: u.registrationIp ?? null,
       createdAt: u.createdAt.toISOString(),
       totalDeposited: userTxs.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
       totalWithdrawn: userTxs.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0),
@@ -109,6 +109,7 @@ router.get("/users/:userId", async (req, res) => {
     isSuspended: u.isSuspended,
     activePlanId: u.activePlanId,
     planName: u.activePlanId ? (planMap.get(u.activePlanId) ?? null) : null,
+    registrationIp: u.registrationIp ?? null,
     createdAt: u.createdAt.toISOString(),
     totalDeposited: userTxs.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
     totalWithdrawn: userTxs.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0),
@@ -263,6 +264,88 @@ router.post("/settings", async (req, res) => {
   await setSetting("deposit_address", depositAddress);
 
   res.json({ message: "Settings updated" });
+});
+
+router.get("/bonus-tasks", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const tasks = await db.select().from(bonusTasksTable).orderBy(desc(bonusTasksTable.createdAt));
+
+  const logs = await db.select().from(bonusTaskLogsTable);
+  const completionCounts = new Map<number, number>();
+  for (const log of logs) {
+    completionCounts.set(log.bonusTaskId, (completionCounts.get(log.bonusTaskId) ?? 0) + 1);
+  }
+
+  const users = await db.select({ id: usersTable.id, username: usersTable.username }).from(usersTable);
+  const userMap = new Map(users.map(u => [u.id, u.username]));
+
+  res.json(tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    reward: Number(t.reward),
+    forUserId: t.forUserId,
+    forUsername: t.forUserId ? (userMap.get(t.forUserId) ?? null) : null,
+    expiresAt: t.expiresAt?.toISOString() ?? null,
+    isActive: t.isActive,
+    completions: completionCounts.get(t.id) ?? 0,
+    createdAt: t.createdAt.toISOString(),
+  })));
+});
+
+router.post("/bonus-tasks", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const { title, description, reward, forUserId, expiresAt } = req.body;
+  if (!title || typeof title !== "string" || !reward || typeof reward !== "number" || reward <= 0) {
+    res.status(400).json({ error: "Invalid input: title and reward are required" });
+    return;
+  }
+
+  const [task] = await db.insert(bonusTasksTable).values({
+    title,
+    description: description ?? null,
+    reward: String(reward),
+    forUserId: forUserId ?? null,
+    expiresAt: expiresAt ? new Date(expiresAt) : null,
+    isActive: true,
+  }).returning();
+
+  res.status(201).json({
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    reward: Number(task.reward),
+    forUserId: task.forUserId,
+    expiresAt: task.expiresAt?.toISOString() ?? null,
+    isActive: task.isActive,
+    createdAt: task.createdAt.toISOString(),
+  });
+});
+
+router.patch("/bonus-tasks/:taskId", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const taskId = parseInt(req.params.taskId);
+  const { isActive } = req.body;
+
+  if (typeof isActive !== "boolean") {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  await db.update(bonusTasksTable).set({ isActive }).where(eq(bonusTasksTable.id, taskId));
+  res.json({ message: isActive ? "Bonus task activated" : "Bonus task deactivated" });
+});
+
+router.delete("/bonus-tasks/:taskId", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const taskId = parseInt(req.params.taskId);
+  await db.delete(bonusTaskLogsTable).where(eq(bonusTaskLogsTable.bonusTaskId, taskId));
+  await db.delete(bonusTasksTable).where(eq(bonusTasksTable.id, taskId));
+  res.json({ message: "Bonus task deleted" });
 });
 
 export default router;

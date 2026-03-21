@@ -1,8 +1,9 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
+import { rateLimit, getClientIp } from "../middleware/rate-limit";
 
 declare module "express-session" {
   interface SessionData {
@@ -12,7 +13,9 @@ declare module "express-session" {
 
 const router = Router();
 
-router.post("/register", async (req, res) => {
+const MAX_ACCOUNTS_PER_IP = 3;
+
+router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid input" });
@@ -20,9 +23,21 @@ router.post("/register", async (req, res) => {
   }
   const { email, password, username } = parsed.data;
 
+  const ip = getClientIp(req);
+
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (existing.length > 0) {
     res.status(400).json({ error: "Email already in use" });
+    return;
+  }
+
+  const [{ count }] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(usersTable)
+    .where(eq(usersTable.registrationIp, ip));
+
+  if (count >= MAX_ACCOUNTS_PER_IP) {
+    res.status(403).json({ error: "Maximum accounts per network reached. Contact support if this is an error." });
     return;
   }
 
@@ -31,6 +46,7 @@ router.post("/register", async (req, res) => {
     email,
     username,
     passwordHash,
+    registrationIp: ip,
   }).returning();
 
   req.session.userId = user.id;
@@ -51,7 +67,7 @@ router.post("/register", async (req, res) => {
   });
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid input" });

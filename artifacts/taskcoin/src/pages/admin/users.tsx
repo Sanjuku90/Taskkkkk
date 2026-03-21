@@ -93,6 +93,9 @@ export default function AdminUsers() {
                     <div className="font-bold text-white">{user.username} {user.isAdmin && <Badge variant="outline" className="ml-2 text-[10px]">ADMIN</Badge>}</div>
                     <div className="text-xs text-zinc-500">{user.email}</div>
                     <div className="text-[10px] text-zinc-600 mt-1">Joined: {formatDate(user.createdAt)}</div>
+                    {(user as any).registrationIp && (
+                      <div className="text-[10px] text-zinc-700 mt-0.5 font-mono">IP: {(user as any).registrationIp}</div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-zinc-300">
                     {user.planName || '-'}

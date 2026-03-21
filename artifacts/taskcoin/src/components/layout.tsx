@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth-wrapper";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui-core";
-import { LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings, Users, Activity, Menu, X } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings, Users, Activity, Menu, X, Star } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,6 +56,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     { icon: Activity, label: "Overview", href: "/admin" },
     { icon: Users, label: "Manage Users", href: "/admin/users" },
     { icon: Wallet, label: "Transactions", href: "/admin/transactions" },
+    { icon: Star, label: "Bonus Tasks", href: "/admin/bonus-tasks" },
     { icon: Settings, label: "Site Settings", href: "/admin/settings" },
   ];
 
