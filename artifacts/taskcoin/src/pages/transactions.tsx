@@ -188,7 +188,8 @@ export default function Transactions() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Amount</Label>
-              <Input type="number" step="0.01" min="1" max={user?.balance} required value={withAmount} onChange={e => setWithAmount(e.target.value)} placeholder="0.00" />
+              <Input type="number" step="0.01" min="31" max={user?.balance} required value={withAmount} onChange={e => setWithAmount(e.target.value)} placeholder="0.00" />
+              <p className="text-xs text-zinc-500">Minimum withdrawal: $31</p>
             </div>
             <div className="space-y-2">
               <Label>Currency</Label>

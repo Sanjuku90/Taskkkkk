@@ -54,6 +54,11 @@ router.post("/", async (req, res) => {
       return;
     }
 
+    if (amount < 31) {
+      res.status(400).json({ error: "Minimum withdrawal amount is $31" });
+      return;
+    }
+
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
     if (!user) {
       res.status(401).json({ error: "User not found" });
