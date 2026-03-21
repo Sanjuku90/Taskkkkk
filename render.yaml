@@ -4,7 +4,6 @@ services:
     runtime: node
     region: frankfurt
     plan: free
-    nodeVersion: 22.22.0
     buildCommand: |
       npm install -g pnpm &&
       pnpm install --frozen-lockfile &&
