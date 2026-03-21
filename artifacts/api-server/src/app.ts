@@ -11,7 +11,14 @@ import { pool } from "@workspace/db";
 
 const PgSession = ConnectPgSimple(session);
 
+const isProd = process.env["NODE_ENV"] === "production";
+
 const app: Express = express();
+
+// Must be set before session middleware so req.secure is correct behind Render's proxy
+if (isProd) {
+  app.set("trust proxy", 1);
+}
 
 app.use(
   pinoHttp({
@@ -40,8 +47,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const isProd = process.env["NODE_ENV"] === "production";
-
 app.use(session({
   store: new PgSession({
     pool,
@@ -58,10 +63,6 @@ app.use(session({
     sameSite: "lax",
   },
 }));
-
-if (isProd) {
-  app.set("trust proxy", 1);
-}
 
 app.use("/api", router);
 

@@ -51,6 +51,10 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
 
   req.session.userId = user.id;
 
+  await new Promise<void>((resolve, reject) =>
+    req.session.save((err) => (err ? reject(err) : resolve())),
+  );
+
   res.status(201).json({
     user: {
       id: user.id,
@@ -93,6 +97,10 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
   }
 
   req.session.userId = user.id;
+
+  await new Promise<void>((resolve, reject) =>
+    req.session.save((err) => (err ? reject(err) : resolve())),
+  );
 
   res.json({
     user: {
