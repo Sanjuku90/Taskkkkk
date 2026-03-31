@@ -54,8 +54,8 @@ router.post("/", async (req, res) => {
       return;
     }
 
-    if (amount < 31) {
-      res.status(400).json({ error: "Minimum withdrawal amount is $31" });
+    if (amount < 60) {
+      res.status(400).json({ error: "Minimum withdrawal amount is $60" });
       return;
     }
 

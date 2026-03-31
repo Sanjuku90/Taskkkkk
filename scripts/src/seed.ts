@@ -3,13 +3,13 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 const plans = [
-  { name: "Starter", depositRequired: "45", tasksPerDay: 3, gainPerTask: "10", totalPerDay: "30" },
-  { name: "Basic", depositRequired: "60", tasksPerDay: 4, gainPerTask: "13", totalPerDay: "52" },
-  { name: "Silver", depositRequired: "80", tasksPerDay: 4, gainPerTask: "18", totalPerDay: "72" },
-  { name: "Gold", depositRequired: "120", tasksPerDay: 5, gainPerTask: "25", totalPerDay: "125" },
-  { name: "Platinum", depositRequired: "180", tasksPerDay: 5, gainPerTask: "35", totalPerDay: "175" },
-  { name: "Diamond", depositRequired: "250", tasksPerDay: 6, gainPerTask: "50", totalPerDay: "300" },
-  { name: "VIP Elite", depositRequired: "400", tasksPerDay: 7, gainPerTask: "80", totalPerDay: "560" },
+  { name: "Starter", depositRequired: "45", tasksPerDay: 3, gainPerTask: "7", totalPerDay: "21" },
+  { name: "Basic", depositRequired: "60", tasksPerDay: 4, gainPerTask: "9", totalPerDay: "36" },
+  { name: "Silver", depositRequired: "80", tasksPerDay: 4, gainPerTask: "12", totalPerDay: "48" },
+  { name: "Gold", depositRequired: "120", tasksPerDay: 5, gainPerTask: "17", totalPerDay: "85" },
+  { name: "Platinum", depositRequired: "180", tasksPerDay: 5, gainPerTask: "23", totalPerDay: "115" },
+  { name: "Diamond", depositRequired: "250", tasksPerDay: 6, gainPerTask: "33", totalPerDay: "198" },
+  { name: "VIP Elite", depositRequired: "400", tasksPerDay: 7, gainPerTask: "54", totalPerDay: "378" },
 ];
 
 console.log("Seeding plans...");

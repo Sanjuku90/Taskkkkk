@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, plansTable, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ActivatePlanBody } from "@workspace/api-zod";
 
 const router = Router();
@@ -49,6 +49,7 @@ router.post("/plan", async (req, res) => {
   await db.update(usersTable).set({
     activePlanId: plan.id,
     planActivatedAt: new Date(),
+    balance: sql`${usersTable.balance} - ${plan.depositRequired}`,
   }).where(eq(usersTable.id, user.id));
 
   res.json({ message: `Plan ${plan.name} activated successfully` });
