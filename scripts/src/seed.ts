@@ -19,7 +19,13 @@ for (const plan of plans) {
     await db.insert(plansTable).values(plan);
     console.log(`Created plan: ${plan.name}`);
   } else {
-    console.log(`Plan already exists: ${plan.name}`);
+    await db.update(plansTable).set({
+      depositRequired: plan.depositRequired,
+      tasksPerDay: plan.tasksPerDay,
+      gainPerTask: plan.gainPerTask,
+      totalPerDay: plan.totalPerDay,
+    }).where(eq(plansTable.name, plan.name));
+    console.log(`Updated plan: ${plan.name}`);
   }
 }
 
