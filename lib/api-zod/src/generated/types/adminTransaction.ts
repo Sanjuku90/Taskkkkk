@@ -19,6 +19,7 @@ export interface AdminTransaction {
   status: AdminTransactionStatus;
   txHash?: string | null;
   walletAddress?: string | null;
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
 }

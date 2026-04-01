@@ -180,6 +180,7 @@ router.get("/transactions", async (req, res) => {
     status: tx.status,
     txHash: tx.txHash,
     walletAddress: tx.walletAddress,
+    note: tx.note ?? null,
     createdAt: tx.createdAt.toISOString(),
     updatedAt: tx.updatedAt.toISOString(),
   })));
@@ -227,6 +228,7 @@ router.post("/transactions/:txId/validate", async (req, res) => {
   } else {
     await db.update(transactionsTable).set({
       status: "rejected",
+      note: parsed.data.note ?? null,
       updatedAt: new Date(),
     }).where(eq(transactionsTable.id, txId));
 

@@ -131,9 +131,14 @@ export default function Transactions() {
                       {tx.currency}
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={tx.status === 'approved' ? 'success' : tx.status === 'rejected' ? 'destructive' : 'warning'}>
-                        {tx.status}
-                      </Badge>
+                      <div className="space-y-1">
+                        <Badge variant={tx.status === 'approved' ? 'success' : tx.status === 'rejected' ? 'destructive' : 'warning'}>
+                          {tx.status}
+                        </Badge>
+                        {tx.status === 'rejected' && tx.note && (
+                          <div className="text-xs text-rose-400/80 max-w-[180px] leading-snug">{tx.note}</div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 hidden md:table-cell text-xs text-zinc-500 font-mono">
                       {tx.txHash ? `Hash: ${tx.txHash.substring(0,8)}...` : tx.walletAddress ? `To: ${tx.walletAddress.substring(0,8)}...` : '-'}

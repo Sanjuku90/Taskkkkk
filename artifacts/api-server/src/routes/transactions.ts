@@ -28,6 +28,7 @@ router.get("/", async (req, res) => {
     status: tx.status,
     txHash: tx.txHash,
     walletAddress: tx.walletAddress,
+    note: tx.note ?? null,
     createdAt: tx.createdAt.toISOString(),
     updatedAt: tx.updatedAt.toISOString(),
   })));

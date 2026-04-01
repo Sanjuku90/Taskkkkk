@@ -16,6 +16,7 @@ export interface Transaction {
   status: TransactionStatus;
   txHash?: string | null;
   walletAddress?: string | null;
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
 }
