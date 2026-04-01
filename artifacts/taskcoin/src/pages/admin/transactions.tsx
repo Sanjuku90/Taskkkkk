@@ -148,7 +148,7 @@ export default function AdminTransactions() {
       >
         <div className="space-y-3">
           <Label className="text-zinc-300 text-sm">Causes de refus</Label>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {REJECTION_REASONS.map((reason) => {
               const isSelected = selectedReasons.includes(reason);
               return (
