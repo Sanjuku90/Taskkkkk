@@ -131,12 +131,18 @@ export default function Transactions() {
                       {tx.currency}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <Badge variant={tx.status === 'approved' ? 'success' : tx.status === 'rejected' ? 'destructive' : 'warning'}>
                           {tx.status}
                         </Badge>
                         {tx.status === 'rejected' && tx.note && (
-                          <div className="text-xs text-rose-400/80 max-w-[180px] leading-snug">{tx.note}</div>
+                          <div className="flex items-start gap-2 mt-1 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
+                            <span className="text-rose-400 shrink-0 mt-0.5">⚠</span>
+                            <div>
+                              <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide mb-0.5">Motif du refus</p>
+                              <p className="text-xs text-rose-300 leading-snug">{tx.note}</p>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </td>
