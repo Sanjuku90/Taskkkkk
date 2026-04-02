@@ -23,9 +23,9 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-white mb-2">{t("dashboard", "welcome")}, {user.username}!</h1>
-        <p className="text-zinc-400">{t("dashboard", "subtitle")}</p>
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-display font-bold text-white mb-1">{t("dashboard", "welcome")}, {user.username}!</h1>
+        <p className="text-zinc-400 text-sm">{t("dashboard", "subtitle")}</p>
       </div>
 
       {user.isSuspended && (

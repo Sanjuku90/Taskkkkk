@@ -173,21 +173,20 @@ export default function Referral() {
                 {/* Referral URL */}
                 <div className="space-y-2">
                   <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wider">Lien complet</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-mono text-xs text-zinc-300 truncate">
+                  <div className="flex-1 min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 overflow-hidden">
+                    <p className="font-mono text-xs text-zinc-300 truncate">
                       {referralLink ?? (isLoading ? "Chargement…" : "Code non disponible")}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyLink}
-                      disabled={!referralLink}
-                      className="shrink-0 border-violet-500/40 text-violet-400 hover:bg-violet-500/10 gap-2"
-                    >
-                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      {copied ? t("common", "copied") : t("common", "copy")}
-                    </Button>
+                    </p>
                   </div>
+                  <Button
+                    variant="outline"
+                    onClick={handleCopyLink}
+                    disabled={!referralLink}
+                    className="w-full border-violet-500/40 text-violet-400 hover:bg-violet-500/10 gap-2"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? t("common", "copied") : t("common", "copy")}
+                  </Button>
                 </div>
 
                 {/* Code only */}

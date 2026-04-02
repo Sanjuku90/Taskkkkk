@@ -170,16 +170,27 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 border-b border-white/5 bg-card/80 backdrop-blur-xl z-30 flex items-center justify-between px-4">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 border-b border-white/5 bg-zinc-950/90 backdrop-blur-xl z-30 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-amber-600 flex items-center justify-center">
-            <Crown className="w-5 h-5 text-zinc-950" />
+            <Crown className="w-4 h-4 text-zinc-950" />
           </div>
-          <span className="font-display font-bold text-xl text-white">TaskCoin</span>
+          <span className="font-display font-bold text-lg text-white">TaskCoin</span>
+          {adminMode && <span className="text-[10px] text-destructive font-bold uppercase bg-destructive/10 px-1.5 py-0.5 rounded">ADMIN</span>}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(true)}>
-          <Menu className="w-6 h-6" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <LangSwitcher />
+          {!adminMode && (
+            <Button variant="ghost" size="icon" className="w-9 h-9" onClick={() => setMobileMenuOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </Button>
+          )}
+          {adminMode && (
+            <Button variant="ghost" size="icon" className="w-9 h-9" onClick={() => setMobileMenuOpen(true)}>
+              <Menu className="w-5 h-5" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Mobile Sidebar Overlay */}
@@ -205,8 +216,8 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-72 flex flex-col min-h-screen pt-16 md:pt-0">
-        <div className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 md:ml-72 flex flex-col min-h-screen pt-14 md:pt-0">
+        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -216,6 +227,60 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
           </motion.div>
         </div>
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      {!adminMode && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-xl border-t border-white/8 safe-area-bottom">
+          <div className="flex items-stretch h-16">
+            {userLinks.map(({ icon: Icon, label, href }) => {
+              const active = location === href;
+              return (
+                <Link key={href} href={href} className="flex-1">
+                  <div className={cn(
+                    "flex flex-col items-center justify-center h-full gap-1 transition-colors relative",
+                    active ? "text-primary" : "text-zinc-500"
+                  )}>
+                    {active && (
+                      <motion.div
+                        layoutId="tab-indicator"
+                        className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary"
+                      />
+                    )}
+                    <Icon className={cn("w-5 h-5 transition-transform", active && "scale-110")} />
+                    <span className={cn("text-[10px] font-medium leading-none", active ? "text-primary" : "text-zinc-500")}>
+                      {label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
+
+      {/* Admin mobile bottom bar */}
+      {adminMode && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-zinc-950/95 backdrop-blur-xl border-t border-white/8">
+          <div className="flex items-stretch h-16 overflow-x-auto no-scrollbar">
+            {adminLinks.map(({ icon: Icon, label, href }) => {
+              const active = location === href;
+              return (
+                <Link key={href} href={href} className="flex-1 min-w-[60px]">
+                  <div className={cn(
+                    "flex flex-col items-center justify-center h-full gap-1 transition-colors px-1",
+                    active ? "text-primary" : "text-zinc-500"
+                  )}>
+                    <Icon className={cn("w-4 h-4", active && "text-primary")} />
+                    <span className={cn("text-[9px] font-medium leading-none text-center line-clamp-1", active ? "text-primary" : "text-zinc-500")}>
+                      {label}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   );
 }
@@ -227,35 +292,35 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <Link href="/">
-            <div className="flex items-center gap-3 cursor-pointer group">
-              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="TaskCoin Logo" className="w-10 h-10 object-contain" />
-              <span className="font-display font-bold text-2xl tracking-tight text-white group-hover:text-primary transition-colors">
+            <div className="flex items-center gap-2 sm:gap-3 cursor-pointer group">
+              <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="TaskCoin Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+              <span className="font-display font-bold text-xl sm:text-2xl tracking-tight text-white group-hover:text-primary transition-colors">
                 TaskCoin
               </span>
             </div>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <LangSwitcher />
             {isAuthenticated ? (
               <Link href="/dashboard">
-                <Button variant="default">{t("nav", "dashboard")}</Button>
+                <Button variant="default" size="sm">{t("nav", "dashboard")}</Button>
               </Link>
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" className="hidden sm:inline-flex">{t("auth", "signIn")}</Button>
+                  <Button variant="ghost" className="hidden sm:inline-flex" size="sm">{t("auth", "signIn")}</Button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="default">{t("auth", "signUp")}</Button>
+                  <Button variant="default" size="sm">{t("auth", "signUp")}</Button>
                 </Link>
               </>
             )}
           </div>
         </div>
       </header>
-      <main className="flex-1 pt-20 flex flex-col relative">
+      <main className="flex-1 pt-16 sm:pt-20 flex flex-col relative">
         <div className="absolute top-0 inset-x-0 h-[500px] overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full mix-blend-screen" />
         </div>

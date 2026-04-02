@@ -204,25 +204,25 @@ export default function Tasks() {
   if (!tasksData?.plan) {
     return (
       <AppLayout>
-        <div className="text-center py-20 max-w-md mx-auto">
-          <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-            <Gift className="w-10 h-10 text-zinc-500" />
+        <div className="text-center py-10 sm:py-16 max-w-md mx-auto">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 border border-white/10">
+            <Gift className="w-8 h-8 sm:w-10 sm:h-10 text-zinc-500" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-white mb-4">{t("tasks", "noActivePlan")}</h2>
-          <p className="text-zinc-400 mb-8">{t("tasks", "noActivePlanSubtitle")}</p>
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-white mb-3">{t("tasks", "noActivePlan")}</h2>
+          <p className="text-zinc-400 mb-6 text-sm sm:text-base">{t("tasks", "noActivePlanSubtitle")}</p>
           <Link href="/plans">
             <Button size="lg" className="w-full">{t("tasks", "viewPlans")}</Button>
           </Link>
         </div>
 
         {bonusTasks && bonusTasks.length > 0 && (
-          <div className="mt-12 max-w-2xl mx-auto">
+          <div className="mt-8 sm:mt-12 max-w-2xl mx-auto">
             <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} t={t} />
           </div>
         )}
 
         {catalogBonuses && catalogBonuses.length > 0 && (
-          <div className="mt-12 max-w-2xl mx-auto">
+          <div className="mt-8 sm:mt-12 max-w-2xl mx-auto">
             <CatalogBonusesSection
               bonuses={catalogBonuses}
               referralCode={(referralInfo as any)?.referralCode ?? null}
@@ -243,18 +243,18 @@ export default function Tasks() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-4xl font-display font-bold text-white mb-2">{t("tasks", "title")}</h1>
-          <p className="text-zinc-400">{t("tasks", "subtitle")}</p>
+          <h1 className="text-2xl sm:text-4xl font-display font-bold text-white mb-1">{t("tasks", "title")}</h1>
+          <p className="text-zinc-400 text-sm">{t("tasks", "subtitle")}</p>
         </div>
-        <div className="flex flex-col items-start md:items-end gap-2">
-          <span className="text-sm text-zinc-500 uppercase tracking-wider font-semibold">{t("tasks", "taskResets")}</span>
+        <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+          <span className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">{t("tasks", "taskResets")}</span>
           <CountdownTimer initialSeconds={tasksData.secondsUntilReset} />
         </div>
       </div>
 
-      <div className="mb-8 glass-card p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="mb-6 glass-card p-4 sm:p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white">{t("tasks", "progressOverview")}</h3>
           <p className="text-sm text-zinc-400">{t("tasks", "plan")}: <span className="text-primary font-medium">{tasksData.plan.name}</span></p>
@@ -287,27 +287,31 @@ export default function Tasks() {
         </motion.div>
       )}
 
-      <div className="grid gap-4 mb-10">
+      <div className="grid gap-3 mb-8">
         {tasksData.tasks.map((task) => (
           <Card key={task.id} className={`transition-all duration-300 ${task.completed ? 'opacity-60 bg-zinc-900 border-white/5' : 'hover:border-primary/30'}`}>
-            <CardContent className="p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 w-full sm:w-auto">
+            <CardContent className="p-4 sm:p-6 flex items-center gap-4">
+              <div className="shrink-0">
                 {task.completed ? (
-                  <CheckCircle2 className="w-8 h-8 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-500" />
                 ) : (
-                  <CircleDashed className="w-8 h-8 text-zinc-600 shrink-0" />
+                  <CircleDashed className="w-7 h-7 sm:w-8 sm:h-8 text-zinc-600" />
                 )}
-                <div>
-                  <h4 className="font-bold text-lg text-white">{t("tasks", "dailyTask")} {task.taskNumber}</h4>
-                  <p className="text-sm text-zinc-400">{t("tasks", "reward")}: <span className="text-primary font-bold">{formatCurrency(task.gain)}</span></p>
-                </div>
               </div>
-              <div className="w-full sm:w-auto flex justify-end">
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-base sm:text-lg text-white">{t("tasks", "dailyTask")} {task.taskNumber}</h4>
+                <p className="text-xs sm:text-sm text-zinc-400">{t("tasks", "reward")}: <span className="text-primary font-bold">{formatCurrency(task.gain)}</span></p>
+                {task.completed && task.completedAt && (
+                  <p className="text-xs text-zinc-500 mt-0.5">{new Date(task.completedAt).toLocaleTimeString()}</p>
+                )}
+              </div>
+              <div className="shrink-0">
                 {task.completed ? (
-                  <Badge variant="success" className="px-4 py-2 text-sm">{t("tasks", "completedAt")} {task.completedAt ? new Date(task.completedAt).toLocaleTimeString() : ''}</Badge>
+                  <Badge variant="success" className="text-xs">✓</Badge>
                 ) : (
                   <Button 
-                    className="w-full sm:w-auto px-8" 
+                    size="sm"
+                    className="px-4 sm:px-8 h-9" 
                     onClick={() => handleComplete(task.id)}
                     isLoading={completingId === task.id}
                     disabled={completingId !== null || user?.isSuspended}
@@ -445,21 +449,25 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
 
       {hasReferralBonus && referralCode && (
         <Card className="mb-6 border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-transparent">
-          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5 text-violet-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white mb-1">{t("tasks", "shareReferral")}</p>
-              <p className="text-xs text-zinc-400 mb-2">{t("tasks", "referralDesc")}</p>
-              <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs text-zinc-300 break-all">
-                <span className="flex-1 truncate">{referralLink}</span>
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-violet-400" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-white">{t("tasks", "shareReferral")}</p>
+                <p className="text-xs text-zinc-400">{t("tasks", "referralDesc")}</p>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0 flex items-center gap-2">
-              <Copy className="w-4 h-4" />
-              {t("common", "copy")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0 bg-black/40 border border-white/10 rounded-lg px-3 py-2 overflow-hidden">
+                <span className="block font-mono text-xs text-zinc-300 truncate">{referralLink}</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0 border-violet-500/40 text-violet-400 hover:bg-violet-500/10 gap-1.5 px-3">
+                <Copy className="w-3.5 h-3.5" />
+                {t("common", "copy")}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
