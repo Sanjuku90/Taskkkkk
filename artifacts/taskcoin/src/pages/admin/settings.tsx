@@ -26,7 +26,7 @@ export default function AdminSettings() {
     tasksBlocked: false,
     withdrawalsBlocked: false,
     depositAddress: "",
-    referralCommissionRate: 5,
+    referralCommissionRate: 30,
   });
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function AdminSettings() {
                 onChange={e => setFormState({...formState, referralCommissionRate: Number(e.target.value)})}
                 placeholder="5"
               />
-              <p className="text-xs text-zinc-500">Percentage of each approved deposit automatically credited to the referrer. Default: 5%.</p>
+              <p className="text-xs text-zinc-500">Percentage of each approved deposit automatically credited to the referrer. Default: 30%.</p>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/5">

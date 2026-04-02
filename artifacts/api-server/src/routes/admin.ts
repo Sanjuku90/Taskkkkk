@@ -222,8 +222,8 @@ router.post("/transactions/:txId/validate", async (req, res) => {
 
       const [depositor] = await db.select({ referredById: usersTable.referredById }).from(usersTable).where(eq(usersTable.id, tx.userId)).limit(1);
       if (depositor?.referredById) {
-        const commissionRateStr = await getSetting("referral_commission_rate", "5");
-        const commissionRate = Math.min(100, Math.max(0, Number(commissionRateStr) || 5));
+        const commissionRateStr = await getSetting("referral_commission_rate", "30");
+        const commissionRate = Math.min(100, Math.max(0, Number(commissionRateStr) || 30));
         const commission = (Number(tx.amount) * commissionRate) / 100;
         if (commission > 0) {
           await db.update(usersTable).set({
@@ -258,7 +258,7 @@ router.get("/settings", async (req, res) => {
     tasksBlocked: (await getSetting("tasks_blocked", "false")) === "true",
     withdrawalsBlocked: (await getSetting("withdrawals_blocked", "false")) === "true",
     depositAddress: await getSetting("deposit_address", "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS"),
-    referralCommissionRate: Number(await getSetting("referral_commission_rate", "5")),
+    referralCommissionRate: Number(await getSetting("referral_commission_rate", "30")),
   });
 });
 
