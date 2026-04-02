@@ -12,4 +12,6 @@ export interface SiteSettings {
   tasksBlocked: boolean;
   withdrawalsBlocked: boolean;
   depositAddress: string;
+  /** Percentage of deposit paid as commission to the referrer (0-100) */
+  referralCommissionRate: number;
 }

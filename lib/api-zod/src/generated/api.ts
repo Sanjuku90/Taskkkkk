@@ -145,6 +145,7 @@ export const GetMyTransactionsResponseItem = zod.object({
   status: zod.enum(["pending", "approved", "rejected"]),
   txHash: zod.string().nullish(),
   walletAddress: zod.string().nullish(),
+  note: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -259,6 +260,7 @@ export const GetAdminTransactionsResponseItem = zod.object({
   status: zod.enum(["pending", "approved", "rejected"]),
   txHash: zod.string().nullish(),
   walletAddress: zod.string().nullish(),
+  note: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -291,7 +293,11 @@ export const GetAdminSettingsResponse = zod.object({
   tasksBlocked: zod.boolean(),
   withdrawalsBlocked: zod.boolean(),
   depositAddress: zod.string(),
-  referralCommissionRate: zod.number(),
+  referralCommissionRate: zod
+    .number()
+    .describe(
+      "Percentage of deposit paid as commission to the referrer (0-100)",
+    ),
 });
 
 /**
@@ -303,7 +309,11 @@ export const UpdateAdminSettingsBody = zod.object({
   tasksBlocked: zod.boolean(),
   withdrawalsBlocked: zod.boolean(),
   depositAddress: zod.string(),
-  referralCommissionRate: zod.number().min(0).max(100),
+  referralCommissionRate: zod
+    .number()
+    .describe(
+      "Percentage of deposit paid as commission to the referrer (0-100)",
+    ),
 });
 
 export const UpdateAdminSettingsResponse = zod.object({

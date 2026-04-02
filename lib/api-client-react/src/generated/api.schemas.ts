@@ -105,6 +105,7 @@ export interface Transaction {
   status: TransactionStatus;
   txHash?: string | null;
   walletAddress?: string | null;
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -193,6 +194,7 @@ export interface AdminTransaction {
   status: AdminTransactionStatus;
   txHash?: string | null;
   walletAddress?: string | null;
+  note?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -216,4 +218,6 @@ export interface SiteSettings {
   tasksBlocked: boolean;
   withdrawalsBlocked: boolean;
   depositAddress: string;
+  /** Percentage of deposit paid as commission to the referrer (0-100) */
+  referralCommissionRate: number;
 }

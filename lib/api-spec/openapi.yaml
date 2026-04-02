@@ -575,6 +575,9 @@ components:
         walletAddress:
           type: string
           nullable: true
+        note:
+          type: string
+          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -687,6 +690,9 @@ components:
           type: string
           nullable: true
         walletAddress:
+          type: string
+          nullable: true
+        note:
           type: string
           nullable: true
         createdAt:

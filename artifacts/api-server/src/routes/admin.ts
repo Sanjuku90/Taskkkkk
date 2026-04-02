@@ -98,8 +98,7 @@ router.get("/users/:userId", async (req, res) => {
   const planMap = new Map(plans.map(p => [p.id, p.name]));
 
   const userTxs = await db.select().from(transactionsTable)
-    .where(eq(transactionsTable.userId, userId))
-    .where(eq(transactionsTable.status, "approved"));
+    .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.status, "approved")));
 
   res.json({
     id: u.id,
@@ -161,6 +160,7 @@ router.get("/transactions", async (req, res) => {
     status: transactionsTable.status,
     txHash: transactionsTable.txHash,
     walletAddress: transactionsTable.walletAddress,
+    note: transactionsTable.note,
     createdAt: transactionsTable.createdAt,
     updatedAt: transactionsTable.updatedAt,
     username: usersTable.username,
