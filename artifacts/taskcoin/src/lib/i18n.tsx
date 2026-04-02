@@ -175,8 +175,8 @@ const translations = {
       noPlan: "No Plan",
       howItWorks: "How It Works",
       step1: "Share your unique referral link with friends",
-      step2: "They register on TaskCoin using your link",
-      step3: "You earn bonuses when milestones are reached",
+      step2: "They register and make a deposit on TaskCoin",
+      step3: "You earn bonuses once your referrals have deposited",
     },
     bonuses: {
       title: "Bonuses",
@@ -373,8 +373,8 @@ const translations = {
       noPlan: "Sans plan",
       howItWorks: "Comment ça marche",
       step1: "Partagez votre lien de parrainage unique avec vos amis",
-      step2: "Ils s'inscrivent sur TaskCoin via votre lien",
-      step3: "Vous gagnez des bonus lorsque des paliers sont atteints",
+      step2: "Ils s'inscrivent sur TaskCoin et effectuent un dépôt",
+      step3: "Vous gagnez des bonus une fois que vos filleuls ont déposé",
     },
     bonuses: {
       title: "Bonus",

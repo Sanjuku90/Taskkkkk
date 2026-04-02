@@ -13,8 +13,13 @@ async function checkCondition(
   switch (type) {
     case "referral": {
       const [row] = await db
-        .select({ count: sql<number>`count(*)::int` })
+        .select({ count: sql<number>`count(distinct ${usersTable.id})::int` })
         .from(usersTable)
+        .innerJoin(transactionsTable, and(
+          eq(transactionsTable.userId, usersTable.id),
+          eq(transactionsTable.type, "deposit"),
+          eq(transactionsTable.status, "approved")
+        ))
         .where(eq(usersTable.referredById, userId));
       const count = row?.count ?? 0;
       return { eligible: count >= conditionValue, progress: Math.min(count, conditionValue), total: conditionValue };
@@ -86,7 +91,7 @@ async function checkCondition(
 function progressLabel(type: BonusCatalogType, progress: number, total: number): string {
   switch (type) {
     case "referral":
-      return `${progress} / ${total} ${total === 1 ? "friend" : "friends"} invited`;
+      return `${progress} / ${total} ${total === 1 ? "filleul avec dépôt" : "filleuls avec dépôt"}`;
     case "first_deposit":
       return progress >= 1 ? "First deposit made" : "No deposit yet";
     case "deposit_milestone":

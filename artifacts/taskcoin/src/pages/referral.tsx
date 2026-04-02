@@ -346,6 +346,7 @@ export default function Referral() {
                         <th className="text-left py-3 px-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t("referral", "joinedOn")}</th>
                         <th className="text-center py-3 px-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t("referral", "planStatus")}</th>
                         <th className="text-right py-3 px-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{t("referral", "deposited")}</th>
+                        <th className="text-center py-3 px-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Bonus</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
@@ -379,6 +380,13 @@ export default function Referral() {
                           </td>
                           <td className="py-3 px-2 text-right font-mono font-medium text-white">
                             {formatCurrency(u.totalDeposited)}
+                          </td>
+                          <td className="py-3 px-2 text-center">
+                            {u.totalDeposited > 0 ? (
+                              <Badge variant="success" className="text-xs">Qualifié</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30">En attente</Badge>
+                            )}
                           </td>
                         </motion.tr>
                       ))}

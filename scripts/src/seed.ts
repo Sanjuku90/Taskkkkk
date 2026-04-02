@@ -67,7 +67,7 @@ const bonuses = [
   {
     type: "referral" as const,
     title: "Premier filleul",
-    description: "Invitez votre premier ami à rejoindre TaskCoin via votre lien de parrainage. Dès qu'il s'inscrit, vous débloquez ce bonus.",
+    description: "Invitez un ami qui s'inscrit et effectue un dépôt approuvé sur TaskCoin. Dès que son dépôt est validé, ce bonus est débloqué.",
     reward: "8",
     conditionValue: "1",
     isActive: true,
@@ -75,7 +75,7 @@ const bonuses = [
   {
     type: "referral" as const,
     title: "5 filleuls actifs",
-    description: "Ramenez 5 personnes sur la plateforme via votre lien de parrainage et réclamez ce bonus exclusif pour les parrains actifs.",
+    description: "Amenez 5 filleuls qui ont chacun effectué un dépôt approuvé sur la plateforme. Réclamez ce bonus exclusif pour les parrains actifs.",
     reward: "50",
     conditionValue: "5",
     isActive: true,
@@ -83,7 +83,7 @@ const bonuses = [
   {
     type: "referral" as const,
     title: "10 filleuls — Super Parrain",
-    description: "Atteignez 10 filleuls inscrits grâce à votre lien et rejoignez le cercle des Super Parrains avec une récompense premium.",
+    description: "Atteignez 10 filleuls ayant tous déposé et rejoignez le cercle des Super Parrains avec une récompense premium.",
     reward: "120",
     conditionValue: "10",
     isActive: false,
