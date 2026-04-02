@@ -6,7 +6,7 @@ import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDownToLine, ArrowUpFromLine, Copy } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle } from "lucide-react";
 // Re-export specific enums if needed, or use strings directly since zod allows it via schema typing
 type TxType = "deposit" | "withdrawal";
 type Currency = "USDT" | "TRX";
@@ -29,6 +29,7 @@ export default function Transactions() {
   const [withAmount, setWithAmount] = useState("");
   const [withCurrency, setWithCurrency] = useState<Currency>("USDT");
   const [withAddress, setWithAddress] = useState("");
+  const [withDisclaimer, setWithDisclaimer] = useState(false);
 
   const createTxMutation = useCreateTransaction({
     mutation: {
@@ -39,7 +40,7 @@ export default function Transactions() {
         setIsWithdrawOpen(false);
         // Reset forms
         setDepAmount(""); setDepHash("");
-        setWithAmount(""); setWithAddress("");
+        setWithAmount(""); setWithAddress(""); setWithDisclaimer(false);
       },
       onError: (error: any) => {
         toast({ title: "Request Failed", description: error?.message || "Invalid input or blocked.", variant: "destructive" });
@@ -194,7 +195,12 @@ export default function Transactions() {
       </Modal>
 
       {/* WITHDRAW MODAL */}
-      <Modal isOpen={isWithdrawOpen} onClose={() => setIsWithdrawOpen(false)} title="Request Withdrawal" description={`Available Balance: ${formatCurrency(user?.balance || 0)}`}>
+      <Modal
+        isOpen={isWithdrawOpen}
+        onClose={() => { setIsWithdrawOpen(false); setWithDisclaimer(false); }}
+        title="Request Withdrawal"
+        description={`Available Balance: ${formatCurrency(user?.balance || 0)}`}
+      >
         <form onSubmit={handleWithdraw} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -217,7 +223,38 @@ export default function Transactions() {
             <Label>Your Wallet Address</Label>
             <Input required value={withAddress} onChange={e => setWithAddress(e.target.value)} placeholder="Enter TRC20 address" />
           </div>
-          <Button type="submit" className="w-full mt-4" isLoading={createTxMutation.isPending}>Request Withdrawal</Button>
+
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4">
+            <div className="flex items-start gap-3 mb-3">
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-rose-400 mb-1">Important Warning</p>
+                <p className="text-sm text-zinc-300 leading-relaxed">
+                  You are responsible for providing the correct wallet address. If you submit incorrect or invalid information, your funds <span className="text-rose-400 font-semibold">may be permanently lost</span>. TaskCoin cannot recover funds sent to a wrong address.
+                </p>
+              </div>
+            </div>
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={withDisclaimer}
+                onChange={e => setWithDisclaimer(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded accent-rose-500 shrink-0 cursor-pointer"
+              />
+              <span className="text-sm text-zinc-300 group-hover:text-white transition-colors leading-snug">
+                I understand that providing incorrect information may result in the permanent loss of my funds, and I accept full responsibility for the accuracy of the details entered.
+              </span>
+            </label>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full mt-4"
+            isLoading={createTxMutation.isPending}
+            disabled={!withDisclaimer || createTxMutation.isPending}
+          >
+            Request Withdrawal
+          </Button>
         </form>
       </Modal>
     </AppLayout>
