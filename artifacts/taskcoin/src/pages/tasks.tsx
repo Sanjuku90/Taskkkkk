@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { Clock, CheckCircle2, CircleDashed, Gift, Star, Zap, Users, TrendingUp, CreditCard, Calendar, Copy, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n";
 
 function CountdownTimer({ initialSeconds }: { initialSeconds: number }) {
   const [seconds, setSeconds] = useState(initialSeconds);
@@ -159,6 +160,7 @@ export default function Tasks() {
   const { data: referralInfo } = useReferral();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [completingId, setCompletingId] = useState<number | null>(null);
   const [completingBonusId, setCompletingBonusId] = useState<number | null>(null);
 
@@ -206,16 +208,16 @@ export default function Tasks() {
           <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
             <Gift className="w-10 h-10 text-zinc-500" />
           </div>
-          <h2 className="text-3xl font-display font-bold text-white mb-4">No Active Plan</h2>
-          <p className="text-zinc-400 mb-8">You need an active investment plan to receive daily tasks and earn rewards.</p>
+          <h2 className="text-3xl font-display font-bold text-white mb-4">{t("tasks", "noActivePlan")}</h2>
+          <p className="text-zinc-400 mb-8">{t("tasks", "noActivePlanSubtitle")}</p>
           <Link href="/plans">
-            <Button size="lg" className="w-full">View Investment Plans</Button>
+            <Button size="lg" className="w-full">{t("tasks", "viewPlans")}</Button>
           </Link>
         </div>
 
         {bonusTasks && bonusTasks.length > 0 && (
           <div className="mt-12 max-w-2xl mx-auto">
-            <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
+            <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} t={t} />
           </div>
         )}
 
@@ -227,6 +229,7 @@ export default function Tasks() {
               onClaim={(id) => claimCatalogMutation.mutate(id)}
               claimingId={claimCatalogMutation.isPending ? (claimCatalogMutation.variables as number) : null}
               suspended={!!user?.isSuspended}
+              t={t}
             />
           </div>
         )}
@@ -242,23 +245,23 @@ export default function Tasks() {
     <AppLayout>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-4xl font-display font-bold text-white mb-2">Daily Tasks</h1>
-          <p className="text-zinc-400">Complete these tasks to earn your daily ROI.</p>
+          <h1 className="text-4xl font-display font-bold text-white mb-2">{t("tasks", "title")}</h1>
+          <p className="text-zinc-400">{t("tasks", "subtitle")}</p>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
-          <span className="text-sm text-zinc-500 uppercase tracking-wider font-semibold">Resets in</span>
+          <span className="text-sm text-zinc-500 uppercase tracking-wider font-semibold">{t("tasks", "taskResets")}</span>
           <CountdownTimer initialSeconds={tasksData.secondsUntilReset} />
         </div>
       </div>
 
       <div className="mb-8 glass-card p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
         <div>
-          <h3 className="text-lg font-semibold text-white">Progress Overview</h3>
-          <p className="text-sm text-zinc-400">Plan: <span className="text-primary font-medium">{tasksData.plan.name}</span></p>
+          <h3 className="text-lg font-semibold text-white">{t("tasks", "progressOverview")}</h3>
+          <p className="text-sm text-zinc-400">{t("tasks", "plan")}: <span className="text-primary font-medium">{tasksData.plan.name}</span></p>
         </div>
         <div className="flex-1 w-full max-w-md">
           <div className="flex justify-between text-sm font-medium mb-2">
-            <span className="text-white">{completedCount} / {totalCount} Tasks</span>
+            <span className="text-white">{completedCount} / {totalCount} {t("tasks", "title")}</span>
             <span className="text-primary">{Math.round((completedCount/totalCount)*100)}%</span>
           </div>
           <div className="w-full bg-black/40 rounded-full h-3 border border-white/5 overflow-hidden inset-0">
@@ -279,8 +282,8 @@ export default function Tasks() {
           className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-6 rounded-2xl mb-8 flex flex-col items-center text-center gap-3"
         >
           <CheckCircle2 className="w-12 h-12" />
-          <h2 className="text-2xl font-bold">All tasks completed!</h2>
-          <p>Great job! Come back tomorrow when the timer resets for more rewards.</p>
+          <h2 className="text-2xl font-bold">{t("tasks", "allDone")}</h2>
+          <p>{t("tasks", "allDoneSubtitle")}</p>
         </motion.div>
       )}
 
@@ -295,13 +298,13 @@ export default function Tasks() {
                   <CircleDashed className="w-8 h-8 text-zinc-600 shrink-0" />
                 )}
                 <div>
-                  <h4 className="font-bold text-lg text-white">Daily Review Task {task.taskNumber}</h4>
-                  <p className="text-sm text-zinc-400">Reward: <span className="text-primary font-bold">{formatCurrency(task.gain)}</span></p>
+                  <h4 className="font-bold text-lg text-white">{t("tasks", "dailyTask")} {task.taskNumber}</h4>
+                  <p className="text-sm text-zinc-400">{t("tasks", "reward")}: <span className="text-primary font-bold">{formatCurrency(task.gain)}</span></p>
                 </div>
               </div>
               <div className="w-full sm:w-auto flex justify-end">
                 {task.completed ? (
-                  <Badge variant="success" className="px-4 py-2 text-sm">Completed at {task.completedAt ? new Date(task.completedAt).toLocaleTimeString() : ''}</Badge>
+                  <Badge variant="success" className="px-4 py-2 text-sm">{t("tasks", "completedAt")} {task.completedAt ? new Date(task.completedAt).toLocaleTimeString() : ''}</Badge>
                 ) : (
                   <Button 
                     className="w-full sm:w-auto px-8" 
@@ -309,7 +312,7 @@ export default function Tasks() {
                     isLoading={completingId === task.id}
                     disabled={completingId !== null || user?.isSuspended}
                   >
-                    Complete Task
+                    {t("tasks", "complete")}
                   </Button>
                 )}
               </div>
@@ -319,7 +322,7 @@ export default function Tasks() {
       </div>
 
       {!bonusLoading && bonusTasks && bonusTasks.length > 0 && (
-        <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
+        <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} t={t} />
       )}
 
       {catalogBonuses && catalogBonuses.length > 0 && (
@@ -330,6 +333,7 @@ export default function Tasks() {
             onClaim={(id) => claimCatalogMutation.mutate(id)}
             claimingId={claimCatalogMutation.isPending ? (claimCatalogMutation.variables as number) : null}
             suspended={!!user?.isSuspended}
+            t={t}
           />
         </div>
       )}
@@ -337,11 +341,12 @@ export default function Tasks() {
   );
 }
 
-function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: {
+function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended, t }: {
   bonusTasks: BonusTask[];
   onComplete: (id: number) => void;
   completingId: number | null;
   suspended: boolean;
+  t: (section: string, key: string) => string;
 }) {
   return (
     <div>
@@ -350,8 +355,8 @@ function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: 
           <Star className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-display font-bold text-white">Special Bonus Tasks</h2>
-          <p className="text-sm text-zinc-400">Limited-time tasks with extra rewards</p>
+          <h2 className="text-2xl font-display font-bold text-white">{t("tasks", "specialBonuses")}</h2>
+          <p className="text-sm text-zinc-400">{t("tasks", "specialBonusesSubtitle")}</p>
         </div>
       </div>
 
@@ -376,15 +381,15 @@ function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: 
                       <Badge variant="outline" className="text-amber-400 border-amber-500/30 text-xs">BONUS</Badge>
                     </div>
                     {task.description && <p className="text-sm text-zinc-400 mb-1">{task.description}</p>}
-                    <p className="text-sm text-zinc-400">Reward: <span className="text-amber-400 font-bold">{formatCurrency(task.reward)}</span></p>
+                    <p className="text-sm text-zinc-400">{t("tasks", "reward")}: <span className="text-amber-400 font-bold">{formatCurrency(task.reward)}</span></p>
                     {task.expiresAt && !task.completed && (
-                      <p className="text-xs text-zinc-500 mt-1">Expires: {new Date(task.expiresAt).toLocaleDateString()}</p>
+                      <p className="text-xs text-zinc-500 mt-1">{t("tasks", "expires")}: {new Date(task.expiresAt).toLocaleDateString()}</p>
                     )}
                   </div>
                 </div>
                 <div className="w-full sm:w-auto flex justify-end">
                   {task.completed ? (
-                    <Badge variant="success" className="px-4 py-2 text-sm">Completed</Badge>
+                    <Badge variant="success" className="px-4 py-2 text-sm">{t("tasks", "completed")}</Badge>
                   ) : (
                     <Button
                       className="w-full sm:w-auto px-8 bg-amber-500 hover:bg-amber-600 text-black font-bold"
@@ -392,7 +397,7 @@ function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: 
                       isLoading={completingId === task.id}
                       disabled={completingId !== null || suspended}
                     >
-                      Claim Bonus
+                      {t("tasks", "claimBonus")}
                     </Button>
                   )}
                 </div>
@@ -405,12 +410,13 @@ function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: 
   );
 }
 
-function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, suspended }: {
+function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, suspended, t }: {
   bonuses: CatalogBonus[];
   referralCode: string | null;
   onClaim: (id: number) => void;
   claimingId: number | null;
   suspended: boolean;
+  t: (section: string, key: string) => string;
 }) {
   const { toast } = useToast();
   const referralLink = referralCode
@@ -420,7 +426,7 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
   const copyLink = () => {
     if (!referralLink) return;
     navigator.clipboard.writeText(referralLink);
-    toast({ title: "Copied!", description: "Referral link copied to clipboard." });
+    toast({ title: t("common", "copied"), description: referralLink });
   };
 
   const hasReferralBonus = bonuses.some(b => b.type === "referral");
@@ -432,8 +438,8 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
           <BookOpen className="w-5 h-5 text-violet-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-display font-bold text-white">Reward Bonuses</h2>
-          <p className="text-sm text-zinc-400">Earn bonuses by completing real milestones</p>
+          <h2 className="text-2xl font-display font-bold text-white">{t("tasks", "rewardBonuses")}</h2>
+          <p className="text-sm text-zinc-400">{t("tasks", "rewardBonusesSubtitle")}</p>
         </div>
       </div>
 
@@ -444,15 +450,15 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
               <Users className="w-5 h-5 text-violet-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white mb-1">Your Referral Link</p>
-              <p className="text-xs text-zinc-400 mb-2">Share this link — when someone registers using it, your referral bonus gets unlocked.</p>
+              <p className="text-sm font-semibold text-white mb-1">{t("tasks", "shareReferral")}</p>
+              <p className="text-xs text-zinc-400 mb-2">{t("tasks", "referralDesc")}</p>
               <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs text-zinc-300 break-all">
                 <span className="flex-1 truncate">{referralLink}</span>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0 flex items-center gap-2">
               <Copy className="w-4 h-4" />
-              Copy
+              {t("common", "copy")}
             </Button>
           </CardContent>
         </Card>
@@ -486,12 +492,12 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <h4 className="font-bold text-lg text-white">{bonus.title}</h4>
-                          {bonus.claimed && <Badge variant="success" className="text-xs">Claimed</Badge>}
-                          {!bonus.claimed && bonus.eligible && <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Ready to claim</Badge>}
+                          {bonus.claimed && <Badge variant="success" className="text-xs">{t("common", "claimed")}</Badge>}
+                          {!bonus.claimed && bonus.eligible && <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">{t("tasks", "readyToClaim")}</Badge>}
                         </div>
                         <p className="text-sm text-zinc-400 mb-2">{bonus.description}</p>
                         <p className="text-sm text-zinc-400">
-                          Reward: <span className="text-amber-400 font-bold">{formatCurrency(bonus.reward)}</span>
+                          {t("tasks", "reward")}: <span className="text-amber-400 font-bold">{formatCurrency(bonus.reward)}</span>
                         </p>
                       </div>
                     </div>
@@ -499,7 +505,7 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
                       {bonus.claimed ? (
                         <Badge variant="success" className="px-4 py-2 text-sm">
                           <CheckCircle2 className="w-4 h-4 mr-1" />
-                          Claimed
+                          {t("common", "claimed")}
                         </Badge>
                       ) : bonus.eligible ? (
                         <Button
@@ -508,7 +514,7 @@ function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, sus
                           isLoading={claimingId === bonus.id}
                           disabled={claimingId !== null || suspended}
                         >
-                          Claim ${bonus.reward}
+                          {t("tasks", "claimBonus")} ${bonus.reward}
                         </Button>
                       ) : (
                         <span className="text-xs text-zinc-500 font-mono">{Math.round(pct)}%</span>

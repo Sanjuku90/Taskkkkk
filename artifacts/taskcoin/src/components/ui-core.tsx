@@ -143,7 +143,7 @@ export function Modal({ isOpen, onClose, title, description, children }: ModalPr
                     <X className="h-4 w-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="pt-6">
+                <CardContent className="pt-6 max-h-[70vh] overflow-y-auto">
                   {children}
                 </CardContent>
               </Card>

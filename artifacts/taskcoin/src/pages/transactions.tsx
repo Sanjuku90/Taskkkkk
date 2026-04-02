@@ -7,7 +7,8 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle } from "lucide-react";
-// Re-export specific enums if needed, or use strings directly since zod allows it via schema typing
+import { useI18n } from "@/lib/i18n";
+
 type TxType = "deposit" | "withdrawal";
 type Currency = "USDT" | "TRX";
 
@@ -16,16 +17,15 @@ export default function Transactions() {
   const { data: transactions, isLoading } = useGetMyTransactions();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
 
-  // Deposit Form State
   const [depAmount, setDepAmount] = useState("");
   const [depCurrency, setDepCurrency] = useState<Currency>("USDT");
   const [depHash, setDepHash] = useState("");
   
-  // Withdraw Form State
   const [withAmount, setWithAmount] = useState("");
   const [withCurrency, setWithCurrency] = useState<Currency>("USDT");
   const [withAddress, setWithAddress] = useState("");
@@ -35,10 +35,9 @@ export default function Transactions() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
-        toast({ title: "Request Submitted", description: "Your transaction is pending admin approval." });
+        toast({ title: t("transactions", "submitDeposit"), description: t("common", "pending") });
         setIsDepositOpen(false);
         setIsWithdrawOpen(false);
-        // Reset forms
         setDepAmount(""); setDepHash("");
         setWithAmount(""); setWithAddress(""); setWithDisclaimer(false);
       },
@@ -74,22 +73,22 @@ export default function Transactions() {
 
   const copyAddress = () => {
     navigator.clipboard.writeText("TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS");
-    toast({ title: "Copied!", description: "Deposit address copied to clipboard." });
+    toast({ title: t("common", "copied") });
   };
 
   return (
     <AppLayout>
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div>
-          <h1 className="text-4xl font-display font-bold text-white mb-2">Transactions</h1>
-          <p className="text-zinc-400">Manage your deposits and withdrawals.</p>
+          <h1 className="text-4xl font-display font-bold text-white mb-2">{t("transactions", "title")}</h1>
+          <p className="text-zinc-400">{t("transactions", "subtitle")}</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" onClick={() => setIsDepositOpen(true)}>
-            <ArrowDownToLine className="w-4 h-4 mr-2" /> Deposit
+            <ArrowDownToLine className="w-4 h-4 mr-2" /> {t("transactions", "deposit")}
           </Button>
           <Button variant="outline" className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10" onClick={() => setIsWithdrawOpen(true)}>
-            <ArrowUpFromLine className="w-4 h-4 mr-2" /> Withdraw
+            <ArrowUpFromLine className="w-4 h-4 mr-2" /> {t("transactions", "withdrawal")}
           </Button>
         </div>
       </div>
@@ -99,18 +98,18 @@ export default function Transactions() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-zinc-400 uppercase bg-black/20 border-b border-white/5">
               <tr>
-                <th className="px-6 py-4 font-medium">Type / Date</th>
-                <th className="px-6 py-4 font-medium">Amount</th>
-                <th className="px-6 py-4 font-medium">Currency</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium hidden md:table-cell">Details</th>
+                <th className="px-6 py-4 font-medium">{t("transactions", "typeDate")}</th>
+                <th className="px-6 py-4 font-medium">{t("transactions", "amount")}</th>
+                <th className="px-6 py-4 font-medium">{t("transactions", "currency")}</th>
+                <th className="px-6 py-4 font-medium">{t("common", "status")}</th>
+                <th className="px-6 py-4 font-medium hidden md:table-cell">{t("transactions", "details")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {isLoading ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">Loading...</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">{t("transactions", "loading")}</td></tr>
               ) : transactions?.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">No transactions found.</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">{t("transactions", "noTransactions")}</td></tr>
               ) : (
                 transactions?.map((tx) => (
                   <tr key={tx.id} className="hover:bg-white/5 transition-colors">
@@ -120,7 +119,9 @@ export default function Transactions() {
                           {tx.type === 'deposit' ? <ArrowDownToLine className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
                         </div>
                         <div>
-                          <div className="font-medium text-white capitalize">{tx.type}</div>
+                          <div className="font-medium text-white">
+                            {tx.type === 'deposit' ? t("transactions", "deposit") : t("transactions", "withdrawal")}
+                          </div>
                           <div className="text-xs text-zinc-500">{formatDate(tx.createdAt)}</div>
                         </div>
                       </div>
@@ -134,13 +135,13 @@ export default function Transactions() {
                     <td className="px-6 py-4">
                       <div className="space-y-2">
                         <Badge variant={tx.status === 'approved' ? 'success' : tx.status === 'rejected' ? 'destructive' : 'warning'}>
-                          {tx.status}
+                          {tx.status === 'approved' ? t("common", "approved") : tx.status === 'rejected' ? t("common", "rejected") : t("common", "pending")}
                         </Badge>
                         {tx.status === 'rejected' && tx.note && (
                           <div className="flex items-start gap-2 mt-1 p-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
                             <span className="text-rose-400 shrink-0 mt-0.5">⚠</span>
                             <div>
-                              <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide mb-0.5">Motif du refus</p>
+                              <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide mb-0.5">{t("transactions", "rejectionReason")}</p>
                               <p className="text-xs text-rose-300 leading-snug">{tx.note}</p>
                             </div>
                           </div>
@@ -159,9 +160,9 @@ export default function Transactions() {
       </Card>
 
       {/* DEPOSIT MODAL */}
-      <Modal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} title="Make a Deposit" description="Send funds to the address below and submit the transaction hash.">
+      <Modal isOpen={isDepositOpen} onClose={() => setIsDepositOpen(false)} title={t("transactions", "makeDeposit")} description={t("transactions", "depositDesc")}>
         <div className="mb-6 p-4 rounded-xl bg-black/40 border border-white/10 text-center">
-          <p className="text-sm text-zinc-400 mb-2">Official Deposit Address (TRC20)</p>
+          <p className="text-sm text-zinc-400 mb-2">{t("transactions", "depositAddress")}</p>
           <div className="flex items-center justify-between bg-zinc-900 p-3 rounded-lg border border-white/5 font-mono text-sm text-primary">
             <span className="truncate mr-4">TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS</span>
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-white/10 hover:text-white" onClick={copyAddress}>
@@ -172,11 +173,11 @@ export default function Transactions() {
         <form onSubmit={handleDeposit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Amount</Label>
+              <Label>{t("transactions", "amount")}</Label>
               <Input type="number" step="0.01" min="1" required value={depAmount} onChange={e => setDepAmount(e.target.value)} placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label>{t("transactions", "currency")}</Label>
               <select 
                 className="flex h-12 w-full rounded-xl border border-white/10 bg-background/50 px-4 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none"
                 value={depCurrency} onChange={(e) => setDepCurrency(e.target.value as Currency)}
@@ -187,10 +188,10 @@ export default function Transactions() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Transaction Hash (TXID)</Label>
-            <Input required value={depHash} onChange={e => setDepHash(e.target.value)} placeholder="Enter hash from your wallet" />
+            <Label>{t("transactions", "txHashLabel")}</Label>
+            <Input required value={depHash} onChange={e => setDepHash(e.target.value)} placeholder={t("transactions", "txHashPlaceholder")} />
           </div>
-          <Button type="submit" className="w-full mt-4" isLoading={createTxMutation.isPending}>Submit Deposit Request</Button>
+          <Button type="submit" className="w-full mt-4" isLoading={createTxMutation.isPending}>{t("transactions", "submitDeposit")}</Button>
         </form>
       </Modal>
 
@@ -198,18 +199,18 @@ export default function Transactions() {
       <Modal
         isOpen={isWithdrawOpen}
         onClose={() => { setIsWithdrawOpen(false); setWithDisclaimer(false); }}
-        title="Request Withdrawal"
-        description={`Available Balance: ${formatCurrency(user?.balance || 0)}`}
+        title={t("transactions", "requestWithdrawal")}
+        description={`${t("transactions", "availableBalance")}: ${formatCurrency(user?.balance || 0)}`}
       >
         <form onSubmit={handleWithdraw} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Amount</Label>
+              <Label>{t("transactions", "amount")}</Label>
               <Input type="number" step="0.01" min="60" max={user?.balance} required value={withAmount} onChange={e => setWithAmount(e.target.value)} placeholder="0.00" />
-              <p className="text-xs text-zinc-500">Minimum withdrawal: $60</p>
+              <p className="text-xs text-zinc-500">{t("transactions", "minWithdrawal")}</p>
             </div>
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label>{t("transactions", "currency")}</Label>
               <select 
                 className="flex h-12 w-full rounded-xl border border-white/10 bg-background/50 px-4 py-2 text-sm text-foreground focus:ring-2 focus:ring-primary outline-none"
                 value={withCurrency} onChange={(e) => setWithCurrency(e.target.value as Currency)}
@@ -220,17 +221,17 @@ export default function Transactions() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Your Wallet Address</Label>
-            <Input required value={withAddress} onChange={e => setWithAddress(e.target.value)} placeholder="Enter TRC20 address" />
+            <Label>{t("transactions", "yourWallet")}</Label>
+            <Input required value={withAddress} onChange={e => setWithAddress(e.target.value)} placeholder={t("transactions", "walletPlaceholder")} />
           </div>
 
           <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4">
             <div className="flex items-start gap-3 mb-3">
               <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-rose-400 mb-1">Important Warning</p>
+                <p className="text-sm font-semibold text-rose-400 mb-1">{t("transactions", "importantWarning")}</p>
                 <p className="text-sm text-zinc-300 leading-relaxed">
-                  You are responsible for providing the correct wallet address. If you submit incorrect or invalid information, your funds <span className="text-rose-400 font-semibold">may be permanently lost</span>. TaskCoin cannot recover funds sent to a wrong address.
+                  {t("transactions", "warningText")}
                 </p>
               </div>
             </div>
@@ -242,7 +243,7 @@ export default function Transactions() {
                 className="mt-0.5 w-4 h-4 rounded accent-rose-500 shrink-0 cursor-pointer"
               />
               <span className="text-sm text-zinc-300 group-hover:text-white transition-colors leading-snug">
-                I understand that providing incorrect information may result in the permanent loss of my funds, and I accept full responsibility for the accuracy of the details entered.
+                {t("transactions", "disclaimerText")}
               </span>
             </label>
           </div>
@@ -253,7 +254,7 @@ export default function Transactions() {
             isLoading={createTxMutation.isPending}
             disabled={!withDisclaimer || createTxMutation.isPending}
           >
-            Request Withdrawal
+            {t("transactions", "submitWithdrawal")}
           </Button>
         </form>
       </Modal>

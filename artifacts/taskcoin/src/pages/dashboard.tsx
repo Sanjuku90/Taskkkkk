@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@/compo
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { Link } from "wouter";
 import { Wallet, TrendingUp, CheckCircle, ArrowRightLeft, AlertCircle } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export default function Dashboard() {
   const { user, isLoading: authLoading } = useRequireAuth();
   const { data: plans } = useGetPlans();
   const { data: tasksData } = useGetMyTasks();
   const { data: transactions } = useGetMyTransactions();
+  const { t } = useI18n();
 
   if (authLoading || !user) return <div className="min-h-screen bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
 
@@ -22,16 +24,16 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="mb-8">
-        <h1 className="text-3xl font-display font-bold text-white mb-2">Welcome back, {user.username}!</h1>
-        <p className="text-zinc-400">Here's your investment overview for today.</p>
+        <h1 className="text-3xl font-display font-bold text-white mb-2">{t("dashboard", "welcome")}, {user.username}!</h1>
+        <p className="text-zinc-400">{t("dashboard", "subtitle")}</p>
       </div>
 
       {user.isSuspended && (
         <div className="bg-destructive/10 border border-destructive/20 text-destructive-foreground p-4 rounded-xl mb-8 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
           <div>
-            <h4 className="font-semibold">Account Suspended</h4>
-            <p className="text-sm opacity-90">Your account has been suspended by an administrator. Some features may be restricted.</p>
+            <h4 className="font-semibold">{t("dashboard", "accountSuspended")}</h4>
+            <p className="text-sm opacity-90">{t("dashboard", "suspendedDesc")}</p>
           </div>
         </div>
       )}
@@ -43,7 +45,7 @@ export default function Dashboard() {
             <Wallet className="w-24 h-24" />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Total Balance</CardTitle>
+            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">{t("dashboard", "totalBalance")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-display font-bold text-primary mb-2">
@@ -51,10 +53,10 @@ export default function Dashboard() {
             </div>
             <div className="flex gap-2">
               <Link href="/transactions">
-                <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30">Deposit</Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30">{t("dashboard", "deposit")}</Button>
               </Link>
               <Link href="/transactions">
-                <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30">Withdraw</Button>
+                <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30">{t("dashboard", "withdraw")}</Button>
               </Link>
             </div>
           </CardContent>
@@ -63,19 +65,19 @@ export default function Dashboard() {
         {/* Active Plan */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Active Plan</CardTitle>
+            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">{t("dashboard", "activePlan")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
-              {activePlan ? activePlan.name : "No Plan"}
-              {activePlan && <Badge variant="success">Active</Badge>}
+              {activePlan ? activePlan.name : t("dashboard", "noPlan")}
+              {activePlan && <Badge variant="success">{t("common", "active")}</Badge>}
             </div>
             <p className="text-sm text-zinc-500 mb-4">
-              {activePlan ? `Daily potential: ${formatCurrency(activePlan.totalPerDay)}` : "Start earning today"}
+              {activePlan ? `${t("dashboard", "dailyPotential")}: ${formatCurrency(activePlan.totalPerDay)}` : t("dashboard", "noPlanSubtitle")}
             </p>
             <Link href="/plans">
               <Button size="sm" variant={activePlan ? "outline" : "default"} className="w-full">
-                {activePlan ? "Upgrade Plan" : "View Plans"}
+                {activePlan ? t("dashboard", "upgradePlan") : t("dashboard", "viewPlans")}
               </Button>
             </Link>
           </CardContent>
@@ -84,7 +86,7 @@ export default function Dashboard() {
         {/* Today's Tasks */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Today's Tasks</CardTitle>
+            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">{t("dashboard", "todaysTasks")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-white mb-2 flex items-end gap-2">
@@ -98,7 +100,7 @@ export default function Dashboard() {
             </div>
             <Link href="/tasks">
               <Button size="sm" className="w-full" disabled={!activePlan || completedTasks === totalTasks}>
-                {completedTasks === totalTasks ? "All Done!" : "Complete Tasks"}
+                {completedTasks === totalTasks ? t("dashboard", "allDone") : t("dashboard", "completeTasks")}
               </Button>
             </Link>
           </CardContent>
@@ -107,7 +109,7 @@ export default function Dashboard() {
         {/* Pending Txs */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">Pending Action</CardTitle>
+            <CardTitle className="text-zinc-400 text-sm font-medium uppercase tracking-wider">{t("dashboard", "pendingAction")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4 mb-4">
@@ -116,18 +118,17 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="text-2xl font-bold text-white">{pendingTxs}</div>
-                <div className="text-sm text-zinc-400">Transactions</div>
+                <div className="text-sm text-zinc-400">{t("dashboard", "transactions")}</div>
               </div>
             </div>
             <Link href="/transactions">
-              <Button size="sm" variant="outline" className="w-full">View History</Button>
+              <Button size="sm" variant="outline" className="w-full">{t("dashboard", "viewHistory")}</Button>
             </Link>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Transactions List Preview */}
-      <h2 className="text-xl font-bold text-white mb-4">Recent Activity</h2>
+      <h2 className="text-xl font-bold text-white mb-4">{t("dashboard", "recentActivity")}</h2>
       <Card>
         <div className="divide-y divide-white/5">
           {transactions?.slice(0, 5).map((tx) => (
@@ -140,7 +141,9 @@ export default function Dashboard() {
                   {tx.type === 'deposit' ? <TrendingUp className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
                 </div>
                 <div>
-                  <p className="font-medium text-white capitalize">{tx.type}</p>
+                  <p className="font-medium text-white capitalize">
+                    {tx.type === 'deposit' ? t("transactions", "deposit") : t("transactions", "withdrawal")}
+                  </p>
                   <p className="text-xs text-zinc-500">{formatDate(tx.createdAt)}</p>
                 </div>
               </div>
@@ -149,14 +152,14 @@ export default function Dashboard() {
                   {tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)} {tx.currency}
                 </p>
                 <Badge variant={tx.status === 'approved' ? 'success' : tx.status === 'rejected' ? 'destructive' : 'warning'} className="mt-1 text-[10px] px-1.5 py-0 h-4">
-                  {tx.status}
+                  {tx.status === 'approved' ? t("common", "approved") : tx.status === 'rejected' ? t("common", "rejected") : t("common", "pending")}
                 </Badge>
               </div>
             </div>
           ))}
           {(!transactions || transactions.length === 0) && (
             <div className="p-8 text-center text-zinc-500">
-              No recent activity found.
+              {t("dashboard", "noActivity")}
             </div>
           )}
         </div>

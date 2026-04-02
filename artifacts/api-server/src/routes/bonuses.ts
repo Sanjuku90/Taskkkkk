@@ -207,6 +207,22 @@ router.post("/catalog/:id/claim", async (req, res) => {
   });
 });
 
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+async function getUniqueReferralCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = generateReferralCode();
+    const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.referralCode, code)).limit(1);
+    if (existing.length === 0) return code;
+  }
+  return generateReferralCode() + Date.now().toString(36).slice(-3).toUpperCase();
+}
+
 router.get("/referral", async (req, res) => {
   if (!req.session.userId) {
     res.status(401).json({ error: "Not authenticated" });
@@ -214,11 +230,17 @@ router.get("/referral", async (req, res) => {
   }
   const userId = req.session.userId;
 
-  const [user] = await db
+  let [user] = await db
     .select({ referralCode: usersTable.referralCode })
     .from(usersTable)
     .where(eq(usersTable.id, userId))
     .limit(1);
+
+  if (user && !user.referralCode) {
+    const newCode = await getUniqueReferralCode();
+    await db.update(usersTable).set({ referralCode: newCode }).where(eq(usersTable.id, userId));
+    user = { referralCode: newCode };
+  }
 
   const referredUsers = await db
     .select({
