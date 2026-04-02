@@ -375,6 +375,65 @@ router.get("/bonus-catalog", async (req, res) => {
   })));
 });
 
+router.post("/bonus-catalog", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const { type, title, description, reward, conditionValue } = req.body;
+
+  const validTypes: BonusCatalogType[] = ["referral", "first_deposit", "deposit_milestone", "plan_activation", "task_streak"];
+  if (!validTypes.includes(type)) {
+    res.status(400).json({ error: "Invalid bonus type" });
+    return;
+  }
+  if (!title?.trim()) { res.status(400).json({ error: "Title is required" }); return; }
+  if (!reward || isNaN(Number(reward)) || Number(reward) <= 0) { res.status(400).json({ error: "Invalid reward amount" }); return; }
+  if (!conditionValue || isNaN(Number(conditionValue)) || Number(conditionValue) <= 0) { res.status(400).json({ error: "Invalid condition value" }); return; }
+
+  const [created] = await db.insert(bonusCatalogTable).values({
+    type,
+    title: title.trim(),
+    description: description?.trim() ?? "",
+    reward: String(Number(reward)),
+    conditionValue: String(Number(conditionValue)),
+    isActive: true,
+  }).returning();
+
+  res.status(201).json({
+    id: created.id,
+    type: created.type,
+    title: created.title,
+    description: created.description,
+    reward: Number(created.reward),
+    conditionValue: Number(created.conditionValue),
+    isActive: created.isActive,
+    claims: 0,
+    createdAt: created.createdAt.toISOString(),
+  });
+});
+
+router.delete("/bonus-catalog/:id", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid ID" }); return; }
+
+  const [bonus] = await db.select().from(bonusCatalogTable).where(eq(bonusCatalogTable.id, id)).limit(1);
+  if (!bonus) { res.status(404).json({ error: "Bonus not found" }); return; }
+
+  const [claimCount] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(bonusClaimLogsTable)
+    .where(eq(bonusClaimLogsTable.bonusCatalogId, id));
+
+  if ((claimCount?.count ?? 0) > 0) {
+    res.status(400).json({ error: `Cannot delete a bonus that has already been claimed ${claimCount.count} time(s).` });
+    return;
+  }
+
+  await db.delete(bonusCatalogTable).where(eq(bonusCatalogTable.id, id));
+  res.json({ message: "Bonus deleted" });
+});
+
 router.patch("/bonus-catalog/:id", async (req, res) => {
   if (!await requireAdmin(req, res)) return;
 
