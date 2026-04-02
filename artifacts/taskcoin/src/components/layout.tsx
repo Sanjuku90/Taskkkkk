@@ -118,6 +118,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     },
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { lang } = useI18n();
 
   const userLinks: NavLink[] = [
     { icon: LayoutDashboard, label: t("nav", "dashboard"), href: "/dashboard" },
@@ -126,6 +127,14 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     { icon: Wallet, label: t("nav", "transactions"), href: "/transactions" },
     { icon: UserPlus, label: t("nav", "referral"), href: "/referral" },
   ];
+
+  const bottomNavLabels: Record<string, string> = {
+    "/dashboard": lang === "fr" ? "Accueil" : "Home",
+    "/plans": "Plans",
+    "/tasks": lang === "fr" ? "Tâches" : "Tasks",
+    "/transactions": lang === "fr" ? "Wallet" : "Wallet",
+    "/referral": lang === "fr" ? "Parrainage" : "Referral",
+  };
 
   const adminLinks: NavLink[] = [
     { icon: Activity, label: t("nav", "overview"), href: "/admin" },
@@ -335,8 +344,9 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
           }}
         >
           <div className="flex items-stretch h-16">
-            {userLinks.map(({ icon: Icon, label, href }) => {
+            {userLinks.map(({ icon: Icon, href }) => {
               const active = location === href;
+              const shortLabel = bottomNavLabels[href] ?? href;
               return (
                 <Link key={href} href={href} className="flex-1">
                   <div className={cn(
@@ -359,7 +369,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
                         "text-[10px] font-semibold leading-none tracking-tight",
                         active ? "text-amber-400" : "text-slate-600"
                       )}>
-                        {label}
+                        {shortLabel}
                       </span>
                     </div>
                   </div>
