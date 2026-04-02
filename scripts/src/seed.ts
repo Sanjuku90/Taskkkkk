@@ -111,6 +111,62 @@ const catalogEntries = [
     reward: "70",
     conditionValue: "7",
   },
+  {
+    type: "task_streak" as const,
+    title: "14-Day Task Streak",
+    description: "Complete at least one daily task every day for 14 consecutive days. Two weeks of consistency!",
+    reward: "150",
+    conditionValue: "14",
+  },
+  {
+    type: "task_streak" as const,
+    title: "30-Day Task Streak",
+    description: "Complete at least one daily task every day for 30 consecutive days. A full month of dedication — elite performance!",
+    reward: "400",
+    conditionValue: "30",
+  },
+  {
+    type: "referral" as const,
+    title: "Refer 5 Friends",
+    description: "Invite 5 friends who each register using your referral link. All 5 must complete their registration.",
+    reward: "150",
+    conditionValue: "5",
+  },
+  {
+    type: "referral" as const,
+    title: "Refer 10 Friends",
+    description: "Build your network — get 10 people to register via your referral link and earn a major bonus.",
+    reward: "350",
+    conditionValue: "10",
+  },
+  {
+    type: "referral" as const,
+    title: "Refer 20 Friends",
+    description: "Become a top affiliate — bring in 20 registered users through your link to unlock this exclusive reward.",
+    reward: "800",
+    conditionValue: "20",
+  },
+  {
+    type: "deposit_milestone" as const,
+    title: "Deposit $1,000",
+    description: "Reach a cumulative total of $1,000 in approved deposits. A serious investor milestone.",
+    reward: "180",
+    conditionValue: "1000",
+  },
+  {
+    type: "deposit_milestone" as const,
+    title: "Deposit $2,000",
+    description: "Reach a cumulative total of $2,000 in approved deposits. You are among our top investors.",
+    reward: "400",
+    conditionValue: "2000",
+  },
+  {
+    type: "deposit_milestone" as const,
+    title: "Deposit $5,000",
+    description: "Reach a cumulative total of $5,000 in approved deposits. Elite investor status unlocked.",
+    reward: "1000",
+    conditionValue: "5000",
+  },
 ];
 
 for (const entry of catalogEntries) {
