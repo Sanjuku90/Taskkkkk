@@ -41,6 +41,14 @@ router.post("/plan", async (req, res) => {
     return;
   }
 
+  if (user.activePlanId) {
+    const [currentPlan] = await db.select().from(plansTable).where(eq(plansTable.id, user.activePlanId)).limit(1);
+    if (currentPlan && Number(plan.depositRequired) <= Number(currentPlan.depositRequired)) {
+      res.status(400).json({ error: "You cannot downgrade to a lower or equal plan." });
+      return;
+    }
+  }
+
   if (Number(user.balance) < Number(plan.depositRequired)) {
     res.status(400).json({ error: "Insufficient balance to activate this plan" });
     return;

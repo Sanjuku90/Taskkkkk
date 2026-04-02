@@ -5,7 +5,7 @@ import { Card, CardContent, Button, Badge } from "@/components/ui-core";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Crown, Zap, Shield, Star, TrendingUp } from "lucide-react";
+import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -31,6 +31,9 @@ export default function Plans() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activatingId, setActivatingId] = useState<number | null>(null);
+
+  const currentPlan = plans?.find(p => p.id === user?.activePlanId);
+  const currentPlanDeposit = currentPlan ? currentPlan.depositRequired : -1;
 
   const activateMutation = useActivatePlan({
     mutation: {
@@ -87,6 +90,7 @@ export default function Plans() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {plans?.map((plan, i) => {
             const isActive = user?.activePlanId === plan.id;
+            const isLocked = !isActive && currentPlanDeposit >= 0 && plan.depositRequired <= currentPlanDeposit;
             const tierStyle = TIER_STYLES[i] ?? TIER_STYLES[0];
             const TierIcon = TIER_ICONS[i] ?? Shield;
             const iconColor = TIER_COLORS[i] ?? "text-zinc-400";
@@ -98,7 +102,7 @@ export default function Plans() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.07 }}
               >
-                <div className={`relative glass-card rounded-3xl overflow-hidden bg-gradient-to-br ${tierStyle.gradient} border ${tierStyle.border} ${tierStyle.glow} transition-all duration-300 hover:-translate-y-1.5 h-full flex flex-col ${isActive ? "ring-2 ring-primary/50" : ""}`}>
+                <div className={`relative glass-card rounded-3xl overflow-hidden bg-gradient-to-br ${tierStyle.gradient} border ${tierStyle.border} ${tierStyle.glow} transition-all duration-300 hover:-translate-y-1.5 h-full flex flex-col ${isActive ? "ring-2 ring-primary/50" : ""} ${isLocked ? "opacity-50 grayscale pointer-events-none" : ""}`}>
                   {/* Active banner */}
                   {isActive && (
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-amber-400 to-primary/50" />
@@ -172,11 +176,11 @@ export default function Plans() {
                     <Button
                       className={`w-full ${i >= 5 ? "shine-effect" : ""}`}
                       variant={isActive ? "outline" : i >= 3 ? "default" : "outline"}
-                      disabled={isActive || activatingId === plan.id || user?.isSuspended}
+                      disabled={isActive || isLocked || activatingId === plan.id || user?.isSuspended}
                       isLoading={activatingId === plan.id}
                       onClick={() => handleActivate(plan.id)}
                     >
-                      {isActive ? "✓ Plan actuel" : "Activer ce plan"}
+                      {isActive ? "✓ Plan actuel" : isLocked ? <><Lock className="w-3.5 h-3.5 mr-1.5 inline" />Non disponible</> : "Activer ce plan"}
                     </Button>
                   </div>
                 </div>
