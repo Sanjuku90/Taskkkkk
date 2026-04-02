@@ -13,6 +13,8 @@ export const usersTable = pgTable("users", {
   activePlanId: integer("active_plan_id"),
   planActivatedAt: timestamp("plan_activated_at"),
   registrationIp: varchar("registration_ip", { length: 45 }),
+  referralCode: varchar("referral_code", { length: 16 }).unique(),
+  referredById: integer("referred_by_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

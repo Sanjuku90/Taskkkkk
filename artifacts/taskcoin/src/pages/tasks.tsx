@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { Clock, CheckCircle2, CircleDashed, Gift, Star, Zap } from "lucide-react";
+import { Clock, CheckCircle2, CircleDashed, Gift, Star, Zap, Users, TrendingUp, CreditCard, Calendar, Copy, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
 
@@ -43,12 +43,57 @@ interface BonusTask {
   completedAt: string | null;
 }
 
+interface CatalogBonus {
+  id: number;
+  type: string;
+  title: string;
+  description: string;
+  reward: number;
+  conditionValue: number;
+  eligible: boolean;
+  claimed: boolean;
+  claimedAt: string | null;
+  progress: number;
+  total: number;
+  progressLabel: string;
+}
+
+const CATALOG_TYPE_META: Record<string, { icon: React.ElementType; color: string }> = {
+  referral: { icon: Users, color: "text-violet-400" },
+  first_deposit: { icon: CreditCard, color: "text-emerald-400" },
+  deposit_milestone: { icon: TrendingUp, color: "text-blue-400" },
+  plan_activation: { icon: CheckCircle2, color: "text-amber-400" },
+  task_streak: { icon: Calendar, color: "text-rose-400" },
+};
+
 function useBonusTasks() {
   return useQuery<BonusTask[]>({
     queryKey: ["bonus-tasks"],
     queryFn: async () => {
       const res = await fetch("/api/tasks/bonus");
       if (!res.ok) throw new Error("Failed to fetch bonus tasks");
+      return res.json();
+    },
+  });
+}
+
+function useCatalogBonuses() {
+  return useQuery<CatalogBonus[]>({
+    queryKey: ["catalog-bonuses"],
+    queryFn: async () => {
+      const res = await fetch("/api/bonuses/catalog");
+      if (!res.ok) throw new Error("Failed to fetch catalog bonuses");
+      return res.json();
+    },
+  });
+}
+
+function useReferral() {
+  return useQuery<{ referralCode: string | null; referralCount: number }>({
+    queryKey: ["referral-info"],
+    queryFn: async () => {
+      const res = await fetch("/api/bonuses/referral");
+      if (!res.ok) throw new Error("Failed to fetch referral info");
       return res.json();
     },
   });
@@ -80,10 +125,38 @@ function useCompleteBonusTask() {
   });
 }
 
+function useClaimCatalogBonus() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (bonusId: number) => {
+      const res = await fetch(`/api/bonuses/catalog/${bonusId}/claim`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to claim bonus");
+      }
+      return res.json() as Promise<{ message: string; gain: number; newBalance: number }>;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["catalog-bonuses"] });
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      toast({
+        title: "Bonus Claimed!",
+        description: `You earned ${formatCurrency(data.gain)}. New balance: ${formatCurrency(data.newBalance)}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({ title: "Cannot Claim", description: error?.message || "Could not claim bonus.", variant: "destructive" });
+    },
+  });
+}
+
 export default function Tasks() {
   const { user } = useRequireAuth();
   const { data: tasksData, isLoading } = useGetMyTasks();
   const { data: bonusTasks, isLoading: bonusLoading } = useBonusTasks();
+  const { data: catalogBonuses } = useCatalogBonuses();
+  const { data: referralInfo } = useReferral();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [completingId, setCompletingId] = useState<number | null>(null);
@@ -108,6 +181,7 @@ export default function Tasks() {
   });
 
   const completeBonusMutation = useCompleteBonusTask();
+  const claimCatalogMutation = useClaimCatalogBonus();
 
   const handleComplete = (taskId: number) => {
     setCompletingId(taskId);
@@ -142,6 +216,18 @@ export default function Tasks() {
         {bonusTasks && bonusTasks.length > 0 && (
           <div className="mt-12 max-w-2xl mx-auto">
             <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
+          </div>
+        )}
+
+        {catalogBonuses && catalogBonuses.length > 0 && (
+          <div className="mt-12 max-w-2xl mx-auto">
+            <CatalogBonusesSection
+              bonuses={catalogBonuses}
+              referralCode={(referralInfo as any)?.referralCode ?? null}
+              onClaim={(id) => claimCatalogMutation.mutate(id)}
+              claimingId={claimCatalogMutation.isPending ? (claimCatalogMutation.variables as number) : null}
+              suspended={!!user?.isSuspended}
+            />
           </div>
         )}
       </AppLayout>
@@ -235,6 +321,18 @@ export default function Tasks() {
       {!bonusLoading && bonusTasks && bonusTasks.length > 0 && (
         <BonusTasksSection bonusTasks={bonusTasks} onComplete={handleCompleteBonus} completingId={completingBonusId} suspended={!!user?.isSuspended} />
       )}
+
+      {catalogBonuses && catalogBonuses.length > 0 && (
+        <div className="mt-10">
+          <CatalogBonusesSection
+            bonuses={catalogBonuses}
+            referralCode={(referralInfo as any)?.referralCode ?? null}
+            onClaim={(id) => claimCatalogMutation.mutate(id)}
+            claimingId={claimCatalogMutation.isPending ? (claimCatalogMutation.variables as number) : null}
+            suspended={!!user?.isSuspended}
+          />
+        </div>
+      )}
     </AppLayout>
   );
 }
@@ -302,6 +400,143 @@ function BonusTasksSection({ bonusTasks, onComplete, completingId, suspended }: 
             </Card>
           </motion.div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function CatalogBonusesSection({ bonuses, referralCode, onClaim, claimingId, suspended }: {
+  bonuses: CatalogBonus[];
+  referralCode: string | null;
+  onClaim: (id: number) => void;
+  claimingId: number | null;
+  suspended: boolean;
+}) {
+  const { toast } = useToast();
+  const referralLink = referralCode
+    ? `${window.location.origin}${import.meta.env.BASE_URL}register?ref=${referralCode}`
+    : null;
+
+  const copyLink = () => {
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink);
+    toast({ title: "Copied!", description: "Referral link copied to clipboard." });
+  };
+
+  const hasReferralBonus = bonuses.some(b => b.type === "referral");
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
+          <BookOpen className="w-5 h-5 text-violet-400" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-display font-bold text-white">Reward Bonuses</h2>
+          <p className="text-sm text-zinc-400">Earn bonuses by completing real milestones</p>
+        </div>
+      </div>
+
+      {hasReferralBonus && referralCode && (
+        <Card className="mb-6 border-violet-500/20 bg-gradient-to-r from-violet-500/5 to-transparent">
+          <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5 text-violet-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white mb-1">Your Referral Link</p>
+              <p className="text-xs text-zinc-400 mb-2">Share this link — when someone registers using it, your referral bonus gets unlocked.</p>
+              <div className="flex items-center gap-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2 font-mono text-xs text-zinc-300 break-all">
+                <span className="flex-1 truncate">{referralLink}</span>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0 flex items-center gap-2">
+              <Copy className="w-4 h-4" />
+              Copy
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4">
+        {bonuses.map((bonus) => {
+          const meta = CATALOG_TYPE_META[bonus.type] ?? CATALOG_TYPE_META.first_deposit;
+          const Icon = meta.icon;
+          const pct = bonus.total > 0 ? Math.min(100, (bonus.progress / bonus.total) * 100) : 0;
+
+          return (
+            <motion.div
+              key={bonus.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Card className={`transition-all duration-300 ${
+                bonus.claimed
+                  ? "opacity-60 bg-zinc-900 border-white/5"
+                  : bonus.eligible
+                  ? "border-emerald-500/30 bg-gradient-to-r from-emerald-500/5 to-transparent hover:border-emerald-500/50"
+                  : "hover:border-white/10"
+              }`}>
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className={`w-10 h-10 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center shrink-0`}>
+                        <Icon className={`w-5 h-5 ${meta.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h4 className="font-bold text-lg text-white">{bonus.title}</h4>
+                          {bonus.claimed && <Badge variant="success" className="text-xs">Claimed</Badge>}
+                          {!bonus.claimed && bonus.eligible && <Badge variant="outline" className="text-xs text-emerald-400 border-emerald-500/30">Ready to claim</Badge>}
+                        </div>
+                        <p className="text-sm text-zinc-400 mb-2">{bonus.description}</p>
+                        <p className="text-sm text-zinc-400">
+                          Reward: <span className="text-amber-400 font-bold">{formatCurrency(bonus.reward)}</span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-auto flex justify-end shrink-0">
+                      {bonus.claimed ? (
+                        <Badge variant="success" className="px-4 py-2 text-sm">
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Claimed
+                        </Badge>
+                      ) : bonus.eligible ? (
+                        <Button
+                          className="w-full sm:w-auto px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                          onClick={() => onClaim(bonus.id)}
+                          isLoading={claimingId === bonus.id}
+                          disabled={claimingId !== null || suspended}
+                        >
+                          Claim ${bonus.reward}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-zinc-500 font-mono">{Math.round(pct)}%</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {!bonus.claimed && (
+                    <div className="mt-4">
+                      <div className="flex justify-between text-xs text-zinc-500 mb-1">
+                        <span>{bonus.progressLabel}</span>
+                        <span>{Math.round(pct)}%</span>
+                      </div>
+                      <div className="w-full bg-black/40 rounded-full h-2 border border-white/5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            bonus.eligible ? "bg-emerald-500" : "bg-primary/70"
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

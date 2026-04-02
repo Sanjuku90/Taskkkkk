@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { db, usersTable, plansTable, transactionsTable, taskLogsTable, siteSettingsTable, bonusTasksTable, bonusTaskLogsTable } from "@workspace/db";
+import { db, usersTable, plansTable, transactionsTable, taskLogsTable, siteSettingsTable, bonusTasksTable, bonusTaskLogsTable, bonusCatalogTable, bonusClaimLogsTable } from "@workspace/db";
 import { eq, desc, sql, sum, and, or, isNull } from "drizzle-orm";
 import { SuspendUserBody, AddBonusBody, ValidateTransactionBody, UpdateAdminSettingsBody } from "@workspace/api-zod";
+import type { BonusCatalogType } from "@workspace/db";
 const router = Router();
 
 async function requireAdmin(req: any, res: any): Promise<boolean> {
@@ -348,6 +349,57 @@ router.delete("/bonus-tasks/:taskId", async (req, res) => {
   await db.delete(bonusTaskLogsTable).where(eq(bonusTaskLogsTable.bonusTaskId, taskId));
   await db.delete(bonusTasksTable).where(eq(bonusTasksTable.id, taskId));
   res.json({ message: "Bonus task deleted" });
+});
+
+router.get("/bonus-catalog", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const bonuses = await db.select().from(bonusCatalogTable).orderBy(bonusCatalogTable.id);
+
+  const claims = await db.select().from(bonusClaimLogsTable);
+  const claimCounts = new Map<number, number>();
+  for (const c of claims) {
+    claimCounts.set(c.bonusCatalogId, (claimCounts.get(c.bonusCatalogId) ?? 0) + 1);
+  }
+
+  res.json(bonuses.map(b => ({
+    id: b.id,
+    type: b.type,
+    title: b.title,
+    description: b.description,
+    reward: Number(b.reward),
+    conditionValue: Number(b.conditionValue),
+    isActive: b.isActive,
+    claims: claimCounts.get(b.id) ?? 0,
+    createdAt: b.createdAt.toISOString(),
+  })));
+});
+
+router.patch("/bonus-catalog/:id", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const { isActive, reward, conditionValue, title, description } = req.body;
+
+  const update: Record<string, unknown> = {};
+  if (typeof isActive === "boolean") update.isActive = isActive;
+  if (typeof reward === "number" && reward > 0) update.reward = String(reward);
+  if (typeof conditionValue === "number" && conditionValue > 0) update.conditionValue = String(conditionValue);
+  if (typeof title === "string" && title.trim()) update.title = title.trim();
+  if (typeof description === "string" && description.trim()) update.description = description.trim();
+
+  if (Object.keys(update).length === 0) {
+    res.status(400).json({ error: "No valid fields to update" });
+    return;
+  }
+
+  await db.update(bonusCatalogTable).set(update as any).where(eq(bonusCatalogTable.id, id));
+  res.json({ message: "Bonus catalog entry updated" });
 });
 
 export default router;

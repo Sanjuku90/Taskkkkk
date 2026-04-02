@@ -15,6 +15,24 @@ const router = Router();
 
 const MAX_ACCOUNTS_PER_IP = 3;
 
+function generateReferralCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 8; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+async function getUniqueReferralCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = generateReferralCode();
+    const existing = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.referralCode, code)).limit(1);
+    if (existing.length === 0) return code;
+  }
+  return generateReferralCode() + Date.now().toString(36).slice(-3).toUpperCase();
+}
+
 router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -22,6 +40,7 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
     return;
   }
   const { email, password, username } = parsed.data;
+  const referralCodeUsed: string | undefined = typeof req.body.referralCode === "string" ? req.body.referralCode.trim().toUpperCase() : undefined;
 
   const ip = getClientIp(req);
 
@@ -41,12 +60,22 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
     return;
   }
 
+  let referredById: number | undefined;
+  if (referralCodeUsed) {
+    const [referrer] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.referralCode, referralCodeUsed)).limit(1);
+    if (referrer) referredById = referrer.id;
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
+  const referralCode = await getUniqueReferralCode();
+
   const [user] = await db.insert(usersTable).values({
     email,
     username,
     passwordHash,
     registrationIp: ip,
+    referralCode,
+    referredById: referredById ?? null,
   }).returning();
 
   req.session.userId = user.id;
@@ -65,6 +94,7 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       isSuspended: user.isSuspended,
       activePlanId: user.activePlanId,
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+      referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
     message: "Registration successful",
@@ -112,6 +142,7 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       isSuspended: user.isSuspended,
       activePlanId: user.activePlanId,
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+      referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
     message: "Login successful",
@@ -145,6 +176,7 @@ router.get("/me", async (req, res) => {
     isSuspended: user.isSuspended,
     activePlanId: user.activePlanId,
     planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+    referralCode: user.referralCode,
     createdAt: user.createdAt.toISOString(),
   });
 });

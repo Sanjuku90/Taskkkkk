@@ -16,6 +16,7 @@ import AdminUsers from "@/pages/admin/users";
 import AdminTransactions from "@/pages/admin/transactions";
 import AdminSettings from "@/pages/admin/settings";
 import AdminBonusTasks from "@/pages/admin/bonus-tasks";
+import AdminBonusCatalog from "@/pages/admin/bonus-catalog";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/admin/transactions" component={AdminTransactions} />
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/bonus-tasks" component={AdminBonusTasks} />
+      <Route path="/admin/bonus-catalog" component={AdminBonusCatalog} />
       
       <Route component={NotFound} />
     </Switch>
