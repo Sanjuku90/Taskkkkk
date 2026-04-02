@@ -1,0 +1,63 @@
+Downloading cache...
+==> Cloning from https://github.com/Sanjuku90/Taskkkkk
+==> Checking out commit 9ede09e6e7dfa247d71dec78c63a8fc6990e43e3 in branch master
+==> Downloaded 225MB in 2s. Extraction took 20s.
+==> Requesting Node.js version 20
+==> Using Node.js version 20.20.2 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install -g pnpm@10.26.1 &&
+pnpm install --frozen-lockfile &&
+BASE_PATH=/ PORT=3000 pnpm --filter @workspace/taskcoin run build &&
+pnpm --filter @workspace/api-server run build &&
+cp -r artifacts/taskcoin/dist/public artifacts/api-server/dist/public &&
+pnpm --filter @workspace/db run push -- --force &&
+pnpm --filter @workspace/scripts run seed
+'...
+changed 1 package in 766ms
+1 package is looking for funding
+  run `npm fund` for details
+> @workspace/taskcoin@0.0.0 build /opt/render/project/src/artifacts/taskcoin
+> vite build --config vite.config.ts
+vite v7.3.1 building client environment for production...
+transforming...
+src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+✓ 2186 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/registerSW.js                0.13 kB
+dist/public/manifest.webmanifest         0.43 kB
+dist/public/index.html                   1.37 kB │ gzip:   0.59 kB
+dist/public/assets/index-uVgdDc05.css  106.60 kB │ gzip:  17.65 kB
+dist/public/assets/index-ByvF-ygM.js   568.24 kB │ gzip: 172.86 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.76s
+PWA v1.2.0
+mode      generateSW
+precache  14 entries (3194.61 KiB)
+files generated
+  dist/public/sw.js
+  dist/public/workbox-01f28f5c.js
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+  dist/index.mjs                       2.3mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   3.9mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           203.9kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 452ms
+> @workspace/db@0.0.0 push /opt/render/project/src/lib/db
+> drizzle-kit push --config ./drizzle.config.ts -- --force
+Unrecognized options for command 'push': --
+/opt/render/project/src/lib/db:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/db@0.0.0 push: `drizzle-kit push --config ./drizzle.config.ts -- --force`
+Exit status 1
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
