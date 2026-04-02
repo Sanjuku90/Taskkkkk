@@ -220,14 +220,49 @@ router.get("/referral", async (req, res) => {
     .where(eq(usersTable.id, userId))
     .limit(1);
 
-  const [row] = await db
-    .select({ count: sql<number>`count(*)::int` })
+  const referredUsers = await db
+    .select({
+      id: usersTable.id,
+      username: usersTable.username,
+      createdAt: usersTable.createdAt,
+      activePlanId: usersTable.activePlanId,
+    })
     .from(usersTable)
     .where(eq(usersTable.referredById, userId));
 
+  const referredWithStats = await Promise.all(referredUsers.map(async (u) => {
+    const [depRow] = await db
+      .select({ total: sql<string>`coalesce(sum(amount::numeric), 0)::text` })
+      .from(transactionsTable)
+      .where(and(
+        eq(transactionsTable.userId, u.id),
+        eq(transactionsTable.type, "deposit"),
+        eq(transactionsTable.status, "approved")
+      ));
+    return {
+      id: u.id,
+      username: u.username,
+      joinedAt: u.createdAt?.toISOString() ?? null,
+      hasActivePlan: !!u.activePlanId,
+      totalDeposited: Number(depRow?.total ?? 0),
+    };
+  }));
+
+  const referralBonusClaims = await db
+    .select({ gain: bonusClaimLogsTable.gain })
+    .from(bonusClaimLogsTable)
+    .innerJoin(bonusCatalogTable, eq(bonusClaimLogsTable.bonusCatalogId, bonusCatalogTable.id))
+    .where(and(
+      eq(bonusClaimLogsTable.userId, userId),
+      eq(bonusCatalogTable.type, "referral")
+    ));
+  const totalReferralEarned = referralBonusClaims.reduce((s, r) => s + Number(r.gain), 0);
+
   res.json({
     referralCode: user?.referralCode ?? null,
-    referralCount: row?.count ?? 0,
+    referralCount: referredWithStats.length,
+    referredUsers: referredWithStats,
+    totalReferralEarned,
   });
 });
 

@@ -3,10 +3,11 @@ import { useAuth } from "@/hooks/use-auth-wrapper";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "./ui-core";
-import { LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings, Users, Activity, Menu, X, Star, BookOpen } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings, Users, Activity, Menu, X, Star, BookOpen, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useI18n, type Lang } from "@/lib/i18n";
 
 interface SidebarItemProps {
   icon: React.ElementType;
@@ -32,10 +33,38 @@ function SidebarItem({ icon: Icon, label, href, isActive, onClick }: SidebarItem
   );
 }
 
+function LangSwitcher() {
+  const { lang, setLang } = useI18n();
+  const langs: { code: Lang; flag: string; label: string }[] = [
+    { code: "fr", flag: "🇫🇷", label: "FR" },
+    { code: "en", flag: "🇬🇧", label: "EN" },
+  ];
+  return (
+    <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/10">
+      {langs.map(({ code, flag, label }) => (
+        <button
+          key={code}
+          onClick={() => setLang(code)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+            lang === code
+              ? "bg-primary text-zinc-950 shadow-sm shadow-primary/30"
+              : "text-zinc-400 hover:text-white hover:bg-white/5"
+          )}
+        >
+          <span>{flag}</span>
+          <span>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function AppLayout({ children, adminMode = false }: { children: React.ReactNode, adminMode?: boolean }) {
   const [location] = useLocation();
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
   const logoutMutation = useLogout({
     mutation: {
       onSuccess: () => {
@@ -46,19 +75,20 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userLinks = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-    { icon: Crown, label: "Investment Plans", href: "/plans" },
-    { icon: CheckSquare, label: "Daily Tasks", href: "/tasks" },
-    { icon: Wallet, label: "Transactions", href: "/transactions" },
+    { icon: LayoutDashboard, label: t("nav", "dashboard"), href: "/dashboard" },
+    { icon: Crown, label: t("nav", "plans"), href: "/plans" },
+    { icon: CheckSquare, label: t("nav", "tasks"), href: "/tasks" },
+    { icon: Wallet, label: t("nav", "transactions"), href: "/transactions" },
+    { icon: UserPlus, label: t("nav", "referral"), href: "/referral" },
   ];
 
   const adminLinks = [
-    { icon: Activity, label: "Overview", href: "/admin" },
-    { icon: Users, label: "Manage Users", href: "/admin/users" },
-    { icon: Wallet, label: "Transactions", href: "/admin/transactions" },
-    { icon: BookOpen, label: "Bonus Catalog", href: "/admin/bonus-catalog" },
-    { icon: Star, label: "Special Bonuses", href: "/admin/bonus-tasks" },
-    { icon: Settings, label: "Site Settings", href: "/admin/settings" },
+    { icon: Activity, label: t("nav", "overview"), href: "/admin" },
+    { icon: Users, label: t("nav", "manageUsers"), href: "/admin/users" },
+    { icon: Wallet, label: t("nav", "transactions"), href: "/admin/transactions" },
+    { icon: BookOpen, label: t("nav", "bonusCatalog"), href: "/admin/bonus-catalog" },
+    { icon: Star, label: t("nav", "specialBonuses"), href: "/admin/bonus-tasks" },
+    { icon: Settings, label: t("nav", "siteSettings"), href: "/admin/settings" },
   ];
 
   const links = adminMode ? adminLinks : userLinks;
@@ -94,22 +124,26 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
         ))}
       </div>
 
-      <div className="p-4 border-t border-white/10">
-        <div className="mb-4 px-4">
-          <p className="text-sm text-zinc-400">Logged in as</p>
-          <p className="font-medium text-white truncate">{user?.username}</p>
+      <div className="p-4 border-t border-white/10 space-y-3">
+        <div className="px-1">
+          <LangSwitcher />
+        </div>
+
+        <div className="px-4">
+          <p className="text-xs text-zinc-500 mb-0.5">{t("nav", "loggedInAs")}</p>
+          <p className="font-medium text-white truncate text-sm">{user?.username}</p>
         </div>
         
         {isAdmin && !adminMode && (
           <Link href="/admin">
-            <Button variant="outline" className="w-full mb-3 border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
+            <Button variant="outline" className="w-full border-amber-500/30 text-amber-400 hover:bg-amber-500/10">
               Admin Panel
             </Button>
           </Link>
         )}
         {adminMode && (
           <Link href="/dashboard">
-            <Button variant="outline" className="w-full mb-3">
+            <Button variant="outline" className="w-full">
               Exit Admin
             </Button>
           </Link>
@@ -122,7 +156,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
           isLoading={logoutMutation.isPending}
         >
           <LogOut className="w-5 h-5 mr-3" />
-          Sign Out
+          {t("nav", "logout")}
         </Button>
       </div>
     </div>
@@ -188,6 +222,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
+  const { t } = useI18n();
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -202,17 +237,18 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
           <div className="flex items-center gap-4">
+            <LangSwitcher />
             {isAuthenticated ? (
               <Link href="/dashboard">
-                <Button variant="default">Dashboard</Button>
+                <Button variant="default">{t("nav", "dashboard")}</Button>
               </Link>
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
+                  <Button variant="ghost" className="hidden sm:inline-flex">{t("auth", "signIn")}</Button>
                 </Link>
                 <Link href="/register">
-                  <Button variant="default">Get Started</Button>
+                  <Button variant="default">{t("auth", "signUp")}</Button>
                 </Link>
               </>
             )}
@@ -220,7 +256,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className="flex-1 pt-20 flex flex-col relative">
-        {/* Background ambient glow */}
         <div className="absolute top-0 inset-x-0 h-[500px] overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full mix-blend-screen" />
         </div>

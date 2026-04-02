@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { I18nProvider } from "@/lib/i18n";
 import NotFound from "@/pages/not-found";
 
 // Pages
@@ -17,6 +18,7 @@ import AdminTransactions from "@/pages/admin/transactions";
 import AdminSettings from "@/pages/admin/settings";
 import AdminBonusTasks from "@/pages/admin/bonus-tasks";
 import AdminBonusCatalog from "@/pages/admin/bonus-catalog";
+import Referral from "@/pages/referral";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +39,7 @@ function Router() {
       <Route path="/plans" component={Plans} />
       <Route path="/tasks" component={Tasks} />
       <Route path="/transactions" component={Transactions} />
+      <Route path="/referral" component={Referral} />
       
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/users" component={AdminUsers} />
@@ -52,14 +55,16 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }
 
