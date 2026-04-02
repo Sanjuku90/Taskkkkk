@@ -1,4 +1,4 @@
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"email" text NOT NULL,
 	"username" text NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_referral_code_unique" UNIQUE("referral_code")
 );
 --> statement-breakpoint
-CREATE TABLE "plans" (
+CREATE TABLE IF NOT EXISTS "plans" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"deposit_required" numeric(18, 6) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE "plans" (
 	"total_per_day" numeric(18, 6) NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "bonus_task_logs" (
+CREATE TABLE IF NOT EXISTS "bonus_task_logs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"bonus_task_id" integer NOT NULL,
 	"user_id" integer NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE "bonus_task_logs" (
 	"completed_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "bonus_tasks" (
+CREATE TABLE IF NOT EXISTS "bonus_tasks" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"title" text NOT NULL,
 	"description" text,
@@ -44,7 +44,7 @@ CREATE TABLE "bonus_tasks" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "task_logs" (
+CREATE TABLE IF NOT EXISTS "task_logs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"task_number" integer NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE "task_logs" (
 	"task_date" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "transactions" (
+CREATE TABLE IF NOT EXISTS "transactions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
 	"type" text NOT NULL,
@@ -67,14 +67,14 @@ CREATE TABLE "transactions" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "site_settings" (
+CREATE TABLE IF NOT EXISTS "site_settings" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"key" text NOT NULL,
 	"value" text NOT NULL,
 	CONSTRAINT "site_settings_key_unique" UNIQUE("key")
 );
 --> statement-breakpoint
-CREATE TABLE "bonus_catalog" (
+CREATE TABLE IF NOT EXISTS "bonus_catalog" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"type" text NOT NULL,
 	"title" text NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE "bonus_catalog" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "bonus_claim_logs" (
+CREATE TABLE IF NOT EXISTS "bonus_claim_logs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"bonus_catalog_id" integer NOT NULL,
 	"user_id" integer NOT NULL,
