@@ -6,7 +6,7 @@ import { Button } from "./ui-core";
 import {
   LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings,
   Users, Activity, Menu, X, Star, BookOpen, UserPlus, ChevronRight,
-  Shield
+  Shield, Globe
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -48,12 +48,35 @@ function SidebarItem({ icon: Icon, label, href, isActive, onClick }: {
   );
 }
 
-function LangSwitcher() {
+function LangSwitcher({ compact = false }: { compact?: boolean }) {
   const { lang, setLang } = useI18n();
   const langs: { code: Lang; flag: string; label: string }[] = [
     { code: "fr", flag: "🇫🇷", label: "FR" },
     { code: "en", flag: "🇬🇧", label: "EN" },
   ];
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-0.5 bg-white/5 rounded-xl p-1 border border-white/8">
+        {langs.map(({ code, flag, label }) => (
+          <button
+            key={code}
+            onClick={() => setLang(code)}
+            className={cn(
+              "flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-all",
+              lang === code
+                ? "bg-gradient-to-br from-amber-400 to-amber-500 text-zinc-950 shadow-sm shadow-amber-500/40"
+                : "text-slate-500 hover:text-white hover:bg-white/6"
+            )}
+          >
+            <span>{flag}</span>
+            {!compact && <span>{label}</span>}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1 border border-white/8">
       {langs.map(({ code, flag, label }) => (
@@ -217,21 +240,37 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 z-30 flex items-center justify-between px-4"
         style={{
-          background: "hsl(220, 45%, 6% / 0.95)",
+          background: "hsl(220, 45%, 6% / 0.97)",
           backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid hsl(220, 40%, 14%)"
         }}
       >
-        <div className="flex items-center gap-2 min-w-0">
+        {/* Left: Logo + Page title */}
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shrink-0">
             <Crown className="w-3.5 h-3.5 text-zinc-950" />
           </div>
-          <span className="font-semibold text-white text-sm truncate">{currentPageLabel || "TaskCoin"}</span>
+          <div className="min-w-0">
+            <span className="font-semibold text-white text-sm truncate block leading-tight">
+              {currentPageLabel || "TaskCoin"}
+            </span>
+            {adminMode && (
+              <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider leading-none">Admin</span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <LangSwitcher />
-          <Button variant="ghost" size="icon" className="w-9 h-9" onClick={() => setMobileMenuOpen(true)}>
-            <Menu className="w-4 h-4" />
+
+        {/* Right: Avatar + Menu */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <UserAvatar username={user?.username} />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-9 h-9 text-slate-400 hover:text-white"
+            onClick={() => setMobileMenuOpen(true)}
+          >
+            <Menu className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -246,16 +285,16 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.aside
-              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", bounce: 0, duration: 0.3 }}
-              className="fixed inset-y-0 left-0 w-64 z-50 md:hidden"
+              className="fixed inset-y-0 right-0 w-72 z-50 md:hidden"
               style={{
                 background: "linear-gradient(180deg, hsl(220, 45%, 7%) 0%, hsl(222, 47%, 5%) 100%)",
-                borderRight: "1px solid hsl(220, 40%, 14%)"
+                borderLeft: "1px solid hsl(220, 40%, 14%)"
               }}
             >
               <button
-                className="absolute top-4 right-3 w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-white hover:bg-white/8 transition-colors"
+                className="absolute top-4 left-3 w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-white hover:bg-white/8 transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <X className="w-4 h-4" />
@@ -268,7 +307,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 flex flex-col min-h-screen pt-14 md:pt-0">
-        <div className="flex-1 p-4 md:p-8 pb-24 md:pb-8 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-4 md:p-8 pb-28 md:pb-8 max-w-7xl mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={location}
@@ -285,11 +324,14 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 
       {/* Mobile Bottom Nav — User */}
       {!adminMode && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 safe-area-bottom"
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-30"
           style={{
-            background: "hsl(220, 45%, 6% / 0.97)",
-            backdropFilter: "blur(20px)",
-            borderTop: "1px solid hsl(220, 40%, 14%)"
+            background: "hsl(220, 45%, 5% / 0.98)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderTop: "1px solid hsl(220, 40%, 13%)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)"
           }}
         >
           <div className="flex items-stretch h-16">
@@ -298,19 +340,25 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
               return (
                 <Link key={href} href={href} className="flex-1">
                   <div className={cn(
-                    "relative flex flex-col items-center justify-center h-full gap-1 transition-colors",
-                    active ? "text-amber-400" : "text-slate-600"
+                    "relative flex flex-col items-center justify-center h-full gap-1 transition-colors active:scale-95",
+                    active ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
                   )}>
                     {active && (
                       <motion.div
                         layoutId="bottom-tab-bg"
-                        className="absolute inset-x-1 inset-y-1.5 rounded-xl bg-amber-500/10 border border-amber-500/15"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                        className="absolute inset-x-1 inset-y-1 rounded-xl bg-amber-500/10 border border-amber-500/15"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
                       />
                     )}
                     <div className="relative z-10 flex flex-col items-center gap-1">
-                      <Icon className={cn("w-5 h-5 transition-transform", active && "scale-110")} />
-                      <span className={cn("text-[10px] font-semibold leading-none", active ? "text-amber-400" : "text-slate-600")}>
+                      <Icon className={cn(
+                        "transition-all duration-200",
+                        active ? "w-5 h-5 scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "w-5 h-5"
+                      )} />
+                      <span className={cn(
+                        "text-[10px] font-semibold leading-none tracking-tight",
+                        active ? "text-amber-400" : "text-slate-600"
+                      )}>
                         {label}
                       </span>
                     </div>
@@ -324,26 +372,41 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 
       {/* Mobile Bottom Nav — Admin */}
       {adminMode && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-background/97 backdrop-blur-xl border-t border-rose-500/20">
+        <nav
+          className="md:hidden fixed bottom-0 left-0 right-0 z-30"
+          style={{
+            background: "hsl(220, 45%, 5% / 0.98)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderTop: "1px solid hsl(350, 60%, 20%)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)"
+          }}
+        >
           <div className="flex items-stretch h-16 overflow-x-auto no-scrollbar">
             {adminLinks.map(({ icon: Icon, label, href }) => {
               const active = location === href;
               return (
-                <Link key={href} href={href} className="flex-1 min-w-[58px]">
+                <Link key={href} href={href} className="flex-1 min-w-[56px]">
                   <div className={cn(
-                    "relative flex flex-col items-center justify-center h-full gap-1 px-1",
-                    active ? "text-amber-400" : "text-slate-600"
+                    "relative flex flex-col items-center justify-center h-full gap-1 px-1 transition-colors active:scale-95",
+                    active ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
                   )}>
                     {active && (
                       <motion.div
                         layoutId="admin-tab-bg"
-                        className="absolute inset-x-0.5 inset-y-1.5 rounded-xl bg-amber-500/10"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
+                        className="absolute inset-x-0.5 inset-y-1 rounded-xl bg-amber-500/10 border border-amber-500/15"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
                       />
                     )}
                     <div className="relative z-10 flex flex-col items-center gap-1">
-                      <Icon className={cn("w-4 h-4 transition-transform", active && "scale-110")} />
-                      <span className={cn("text-[9px] font-semibold leading-none text-center line-clamp-1", active ? "text-amber-400" : "text-slate-600")}>
+                      <Icon className={cn(
+                        "transition-all duration-200",
+                        active ? "w-4 h-4 scale-110 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" : "w-4 h-4"
+                      )} />
+                      <span className={cn(
+                        "text-[9px] font-semibold leading-none text-center line-clamp-1",
+                        active ? "text-amber-400" : "text-slate-600"
+                      )}>
                         {label}
                       </span>
                     </div>
@@ -361,28 +424,33 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const { t } = useI18n();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="fixed top-0 left-0 right-0 z-50"
         style={{
-          background: "hsl(222, 47%, 5%, 0.85)",
+          background: "hsl(222, 47%, 5%, 0.92)",
           backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
           borderBottom: "1px solid hsl(220, 40%, 12%)"
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+          {/* Logo */}
           <Link href="/">
-            <div className="flex items-center gap-3 cursor-pointer group">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all">
-                <Crown className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-zinc-950" />
+            <div className="flex items-center gap-2.5 cursor-pointer group shrink-0">
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-all">
+                <Crown className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-zinc-950" />
               </div>
-              <span className="font-display font-bold text-xl sm:text-2xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
+              <span className="font-display font-bold text-lg sm:text-xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
                 TaskCoin
               </span>
             </div>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-4">
+
+          {/* Desktop nav */}
+          <div className="hidden sm:flex items-center gap-2">
             <LangSwitcher />
             {isAuthenticated ? (
               <Link href="/dashboard">
@@ -391,7 +459,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" className="hidden sm:inline-flex text-slate-400 hover:text-white" size="sm">
+                  <Button variant="ghost" className="text-slate-400 hover:text-white" size="sm">
                     {t("auth", "signIn")}
                   </Button>
                 </Link>
@@ -401,9 +469,55 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               </>
             )}
           </div>
+
+          {/* Mobile nav */}
+          <div className="flex sm:hidden items-center gap-1.5">
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button size="sm" className="text-xs px-3 h-8">{t("nav", "dashboard")}</Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="text-xs px-2.5 h-8 text-slate-400 hover:text-white">
+                    {t("auth", "signIn")}
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="sm" className="text-xs px-3 h-8">{t("auth", "signUp")}</Button>
+                </Link>
+                <button
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/8 transition-colors"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label="Langue"
+                >
+                  <Globe className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Mobile language dropdown */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="sm:hidden border-t border-white/6 overflow-hidden"
+              style={{ background: "hsl(222, 47%, 5%, 0.98)" }}
+            >
+              <div className="px-4 py-3 flex items-center gap-3">
+                <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Langue :</span>
+                <LangSwitcher />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
-      <main className="flex-1 pt-16 sm:pt-20 flex flex-col">
+
+      <main className="flex-1 pt-16 flex flex-col">
         {children}
       </main>
     </div>

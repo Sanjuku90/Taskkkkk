@@ -110,7 +110,7 @@ export default function Home() {
                   </span>
                 </motion.div>
 
-                <motion.h1 {...fadeUp(0.07)} className="text-5xl lg:text-[4.5rem] font-display font-black tracking-tight leading-[1.04] mb-6">
+                <motion.h1 {...fadeUp(0.07)} className="text-4xl sm:text-5xl lg:text-[4.5rem] font-display font-black tracking-tight leading-[1.04] mb-6">
                   <span className="text-white">Investis</span>
                   <br />
                   <span className="gradient-text text-glow">intelligent.</span>
@@ -137,10 +137,10 @@ export default function Home() {
                 </motion.div>
 
                 {/* Trust indicators */}
-                <motion.div {...fadeUp(0.26)} className="flex items-center gap-6 mt-8 text-sm text-slate-600">
+                <motion.div {...fadeUp(0.26)} className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 text-sm text-slate-600">
                   {["Gratuit à l'inscription", "Retrait en 24h", "Support 7j/7"].map((item, i) => (
-                    <span key={i} className="flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    <span key={i} className="flex items-center gap-1.5 shrink-0">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       {item}
                     </span>
                   ))}
