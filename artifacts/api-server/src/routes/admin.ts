@@ -219,6 +219,18 @@ router.post("/transactions/:txId/validate", async (req, res) => {
       await db.update(usersTable).set({
         balance: sql`${usersTable.balance} + ${Number(tx.amount)}`,
       }).where(eq(usersTable.id, tx.userId));
+
+      const [depositor] = await db.select({ referredById: usersTable.referredById }).from(usersTable).where(eq(usersTable.id, tx.userId)).limit(1);
+      if (depositor?.referredById) {
+        const commissionRateStr = await getSetting("referral_commission_rate", "5");
+        const commissionRate = Math.min(100, Math.max(0, Number(commissionRateStr) || 5));
+        const commission = (Number(tx.amount) * commissionRate) / 100;
+        if (commission > 0) {
+          await db.update(usersTable).set({
+            balance: sql`${usersTable.balance} + ${commission}`,
+          }).where(eq(usersTable.id, depositor.referredById));
+        }
+      }
     } else if (tx.type === "withdrawal") {
       await db.update(usersTable).set({
         balance: sql`${usersTable.balance} - ${Number(tx.amount)}`,
@@ -246,6 +258,7 @@ router.get("/settings", async (req, res) => {
     tasksBlocked: (await getSetting("tasks_blocked", "false")) === "true",
     withdrawalsBlocked: (await getSetting("withdrawals_blocked", "false")) === "true",
     depositAddress: await getSetting("deposit_address", "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS"),
+    referralCommissionRate: Number(await getSetting("referral_commission_rate", "5")),
   });
 });
 
@@ -258,13 +271,14 @@ router.post("/settings", async (req, res) => {
     return;
   }
 
-  const { maintenanceMode, maintenanceMessage, tasksBlocked, withdrawalsBlocked, depositAddress } = parsed.data;
+  const { maintenanceMode, maintenanceMessage, tasksBlocked, withdrawalsBlocked, depositAddress, referralCommissionRate } = parsed.data;
 
   await setSetting("maintenance_mode", String(maintenanceMode));
   await setSetting("maintenance_message", maintenanceMessage);
   await setSetting("tasks_blocked", String(tasksBlocked));
   await setSetting("withdrawals_blocked", String(withdrawalsBlocked));
   await setSetting("deposit_address", depositAddress);
+  await setSetting("referral_commission_rate", String(referralCommissionRate));
 
   res.json({ message: "Settings updated" });
 });

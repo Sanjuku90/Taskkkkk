@@ -291,6 +291,7 @@ export const GetAdminSettingsResponse = zod.object({
   tasksBlocked: zod.boolean(),
   withdrawalsBlocked: zod.boolean(),
   depositAddress: zod.string(),
+  referralCommissionRate: zod.number(),
 });
 
 /**
@@ -302,6 +303,7 @@ export const UpdateAdminSettingsBody = zod.object({
   tasksBlocked: zod.boolean(),
   withdrawalsBlocked: zod.boolean(),
   depositAddress: zod.string(),
+  referralCommissionRate: zod.number().min(0).max(100),
 });
 
 export const UpdateAdminSettingsResponse = zod.object({

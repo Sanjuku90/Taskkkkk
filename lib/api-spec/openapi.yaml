@@ -719,4 +719,7 @@ components:
           type: boolean
         depositAddress:
           type: string
-      required: [maintenanceMode, maintenanceMessage, tasksBlocked, withdrawalsBlocked, depositAddress]
+        referralCommissionRate:
+          type: number
+          description: Percentage of deposit paid as commission to the referrer (0-100)
+      required: [maintenanceMode, maintenanceMessage, tasksBlocked, withdrawalsBlocked, depositAddress, referralCommissionRate]

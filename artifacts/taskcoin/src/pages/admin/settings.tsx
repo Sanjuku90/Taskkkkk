@@ -11,6 +11,7 @@ type SiteSettings = {
   tasksBlocked: boolean;
   withdrawalsBlocked: boolean;
   depositAddress: string;
+  referralCommissionRate: number;
 };
 
 export default function AdminSettings() {
@@ -24,7 +25,8 @@ export default function AdminSettings() {
     maintenanceMessage: "",
     tasksBlocked: false,
     withdrawalsBlocked: false,
-    depositAddress: ""
+    depositAddress: "",
+    referralCommissionRate: 5,
   });
 
   useEffect(() => {
@@ -69,6 +71,20 @@ export default function AdminSettings() {
                 placeholder="TRX/USDT Address"
                 className="font-mono"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Referral Commission Rate (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.5}
+                value={formState.referralCommissionRate}
+                onChange={e => setFormState({...formState, referralCommissionRate: Number(e.target.value)})}
+                placeholder="5"
+              />
+              <p className="text-xs text-zinc-500">Percentage of each approved deposit automatically credited to the referrer. Default: 5%.</p>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-white/5">
