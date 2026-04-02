@@ -1,0 +1,114 @@
+Downloading cache...
+==> Cloning from https://github.com/Sanjuku90/Taskkkkk
+==> Checking out commit 806c2fe44f262aff82cf07b0a9f21c8272f03bf0 in branch master
+==> Downloaded 225MB in 2s. Extraction took 23s.
+==> Requesting Node.js version 20
+==> Using Node.js version 20.20.2 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install -g pnpm@10.26.1 &&
+pnpm install --frozen-lockfile &&
+BASE_PATH=/ PORT=3000 pnpm --filter @workspace/taskcoin run build &&
+pnpm --filter @workspace/api-server run build &&
+cp -r artifacts/taskcoin/dist/public artifacts/api-server/dist/public &&
+pnpm --filter @workspace/db run migrate &&
+pnpm --filter @workspace/scripts run seed
+'...
+changed 1 package in 798ms
+1 package is looking for funding
+  run `npm fund` for details
+> @workspace/taskcoin@0.0.0 build /opt/render/project/src/artifacts/taskcoin
+> vite build --config vite.config.ts
+vite v7.3.1 building client environment for production...
+transforming...
+src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+✓ 2186 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/registerSW.js                0.13 kB
+dist/public/manifest.webmanifest         0.43 kB
+dist/public/index.html                   1.37 kB │ gzip:   0.59 kB
+dist/public/assets/index-uVgdDc05.css  106.60 kB │ gzip:  17.65 kB
+dist/public/assets/index-ByvF-ygM.js   568.24 kB │ gzip: 172.86 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.84s
+PWA v1.2.0
+mode      generateSW
+precache  14 entries (3194.61 KiB)
+files generated
+  dist/public/sw.js
+  dist/public/workbox-01f28f5c.js
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+  dist/index.mjs                       2.3mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   3.9mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           203.9kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 414ms
+> @workspace/db@0.0.0 migrate /opt/render/project/src/lib/db
+> drizzle-kit migrate --config ./drizzle.config.ts
+Reading config file '/opt/render/project/src/lib/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[✓] migrations applied successfully!
+> @workspace/scripts@0.0.0 seed /opt/render/project/src/scripts
+> tsx ./src/seed.ts
+Seeding plans...
+Updated plan: Starter
+Updated plan: Basic
+Updated plan: Silver
+Updated plan: Gold
+Updated plan: Platinum
+Updated plan: Diamond
+Updated plan: VIP Elite
+Seeding admin user...
+/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:73
+				throw new DrizzleQueryError(queryString, params, e as Error);
+				      ^
+DrizzleQueryError: Failed query: select "id", "email", "username", "password_hash", "balance", "is_admin", "is_suspended", "active_plan_id", "plan_activated_at", "registration_ip", "referral_code", "referred_by_id", "created_at" from "users" where "users"."email" = $1 limit $2
+params: admin@taskcoin.com,1
+    at NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+    at async <anonymous> (/opt/render/project/src/scripts/src/seed.ts:34:23) {
+  query: 'select "id", "email", "username", "password_hash", "balance", "is_admin", "is_suspended", "active_plan_id", "plan_activated_at", "registration_ip", "referral_code", "referred_by_id", "created_at" from "users" where "users"."email" = $1 limit $2',
+  params: [ 'admin@taskcoin.com', 1 ],
+  cause: error: column "referral_code" does not exist
+      at /opt/render/project/src/node_modules/.pnpm/pg-pool@3.13.0_pg@8.20.0/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async <anonymous> (/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:71:12)
+      at async <anonymous> (/opt/render/project/src/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+      at async <anonymous> (/opt/render/project/src/scripts/src/seed.ts:34:23) {
+    length: 114,
+    severity: 'ERROR',
+    code: '42703',
+    detail: undefined,
+    hint: undefined,
+    position: '149',
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'parse_relation.c',
+    line: '3822',
+    routine: 'errorMissingColumn'
+  }
+}
+Node.js v20.20.2
+/opt/render/project/src/scripts:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/scripts@0.0.0 seed: `tsx ./src/seed.ts`
+Exit status 1
+==> Build failed 😞
+==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

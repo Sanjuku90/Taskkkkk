@@ -8,6 +8,13 @@
       "when": 1775110381270,
       "tag": "0000_amusing_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775110381271,
+      "tag": "0001_add_missing_columns",
+      "breakpoints": true
     }
   ]
 }
