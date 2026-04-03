@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
@@ -65,6 +65,13 @@ app.use(session({
 }));
 
 app.use("/api", router);
+
+// Global error handler — always returns JSON so the frontend can parse it safely
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use("/api", (err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled API error");
+  res.status(500).json({ error: "Une erreur interne s'est produite" });
+});
 
 // Serve frontend static files in production
 if (isProd) {
