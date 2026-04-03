@@ -23,6 +23,9 @@ import GamesHub from "@/pages/games/index";
 import CoinFlip from "@/pages/games/coinflip";
 import Mines from "@/pages/games/mines";
 import CrashGame from "@/pages/games/crash";
+import Dice from "@/pages/games/dice";
+import Keno from "@/pages/games/keno";
+import RouletteGame from "@/pages/games/roulette";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +51,9 @@ function Router() {
       <Route path="/games/coinflip" component={CoinFlip} />
       <Route path="/games/mines" component={Mines} />
       <Route path="/games/crash" component={CrashGame} />
+      <Route path="/games/dice" component={Dice} />
+      <Route path="/games/keno" component={Keno} />
+      <Route path="/games/roulette" component={RouletteGame} />
       
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/users" component={AdminUsers} />

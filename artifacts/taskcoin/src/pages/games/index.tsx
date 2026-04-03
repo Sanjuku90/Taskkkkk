@@ -3,7 +3,7 @@ import { useRequireAuth } from "@/hooks/use-auth-wrapper";
 import { Card, CardContent } from "@/components/ui-core";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { Bomb, TrendingUp, CircleDot, ChevronRight, Zap } from "lucide-react";
+import { Bomb, TrendingUp, CircleDot, ChevronRight, Zap, Dices, Grid3x3 } from "lucide-react";
 
 const games = [
   {
@@ -38,6 +38,39 @@ const games = [
     border: "border-amber-500/20",
     tag: "Chance",
     tagColor: "bg-amber-500/15 text-amber-400",
+  },
+  {
+    href: "/games/dice",
+    icon: Dices,
+    title: "Dice",
+    desc: "Lance un dé de 1 à 100. Dépasse le seuil choisi pour remporter la mise. Plus c'est difficile, plus ça paye.",
+    gradient: "from-cyan-500 to-blue-600",
+    bg: "from-cyan-500/10 to-blue-500/8",
+    border: "border-cyan-500/20",
+    tag: "Classique",
+    tagColor: "bg-cyan-500/15 text-cyan-400",
+  },
+  {
+    href: "/games/keno",
+    icon: Grid3x3,
+    title: "Keno",
+    desc: "Choisis 5 numéros parmi 40. Plus tu en matches dans les 10 tirés, plus ton gain explose.",
+    gradient: "from-emerald-500 to-teal-600",
+    bg: "from-emerald-500/10 to-teal-500/8",
+    border: "border-emerald-500/20",
+    tag: "Jackpot",
+    tagColor: "bg-emerald-500/15 text-emerald-400",
+  },
+  {
+    href: "/games/roulette",
+    icon: CircleDot,
+    title: "Roulette",
+    desc: "Mise sur rouge, noir, pair, impair, douzaine ou un numéro précis. Jusqu'à 32× sur un seul chiffre.",
+    gradient: "from-rose-500 to-pink-600",
+    bg: "from-rose-500/10 to-pink-500/8",
+    border: "border-pink-500/20",
+    tag: "Casino",
+    tagColor: "bg-pink-500/15 text-pink-400",
   },
 ];
 

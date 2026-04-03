@@ -404,6 +404,142 @@ router.post("/crash/:id/cashout", async (req, res) => {
   res.json({ payout, multiplier: currentMultiplier, status: "cashed_out" });
 });
 
+// ─── Dice ───────────────────────────────────────────────────────────────────
+
+router.post("/dice", async (req, res) => {
+  if (!requireAuth(req, res)) return;
+
+  const { betAmount, difficulty } = req.body;
+  if (!betAmount || !difficulty) { res.status(400).json({ error: "Missing fields" }); return; }
+  if (!["easy", "medium", "hard"].includes(difficulty)) { res.status(400).json({ error: "Invalid difficulty" }); return; }
+
+  const amount = Number(betAmount);
+  if (isNaN(amount) || amount < MIN_BET) { res.status(400).json({ error: `Mise minimum : $${MIN_BET}` }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (!user || Number(user.balance) < amount) { res.status(400).json({ error: "Solde insuffisant" }); return; }
+
+  // Threshold: easy=50, medium=65, hard=80 — must roll OVER to win
+  const thresholds: Record<string, number> = { easy: 50, medium: 65, hard: 80 };
+  const multipliers: Record<string, number> = { easy: 1.88, medium: 2.65, hard: 4.56 };
+
+  const threshold = thresholds[difficulty];
+  const multiplier = multipliers[difficulty];
+  const roll = Math.floor(Math.random() * 100) + 1; // 1–100
+  const won = roll > threshold;
+  const payout = won ? Math.round(amount * multiplier * 100) / 100 : 0;
+
+  await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${amount}` }).where(eq(usersTable.id, req.session.userId!));
+  if (won) await db.update(usersTable).set({ balance: sql`${usersTable.balance} + ${payout}` }).where(eq(usersTable.id, req.session.userId!));
+
+  await db.insert(gameSessionsTable).values({
+    userId: req.session.userId!, gameType: "coinflip", betAmount: String(amount), difficulty,
+    status: won ? "won" : "lost", multiplier: String(won ? multiplier : 0), payout: String(payout),
+    gameState: { roll, threshold }, endedAt: new Date(),
+  });
+
+  res.json({ roll, threshold, won, payout, multiplier, newBalance: Number(user.balance) - amount + payout });
+});
+
+// ─── Keno ───────────────────────────────────────────────────────────────────
+
+const KENO_PAYOUTS: Record<string, number[]> = {
+  easy:   [0, 0, 0.8, 3.5, 25, 150],
+  medium: [0, 0, 0.5, 2.5, 20, 120],
+  hard:   [0, 0, 0.3, 1.5, 12,  80],
+};
+
+router.post("/keno", async (req, res) => {
+  if (!requireAuth(req, res)) return;
+
+  const { betAmount, difficulty, picks } = req.body;
+  if (!betAmount || !difficulty || !Array.isArray(picks)) { res.status(400).json({ error: "Missing fields" }); return; }
+  if (!["easy", "medium", "hard"].includes(difficulty)) { res.status(400).json({ error: "Invalid difficulty" }); return; }
+  if (picks.length !== 5 || picks.some((n: number) => n < 1 || n > 40)) { res.status(400).json({ error: "Choisis exactement 5 numéros entre 1 et 40" }); return; }
+
+  const amount = Number(betAmount);
+  if (isNaN(amount) || amount < MIN_BET) { res.status(400).json({ error: `Mise minimum : $${MIN_BET}` }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (!user || Number(user.balance) < amount) { res.status(400).json({ error: "Solde insuffisant" }); return; }
+
+  // Draw 10 numbers from 1–40
+  const pool = Array.from({ length: 40 }, (_, i) => i + 1);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const drawn = pool.slice(0, 10);
+  const matches = picks.filter((n: number) => drawn.includes(n)).length;
+  const payouts = KENO_PAYOUTS[difficulty];
+  const multiplier = payouts[matches] ?? 0;
+  const payout = Math.round(amount * multiplier * 100) / 100;
+  const won = payout > 0;
+
+  await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${amount}` }).where(eq(usersTable.id, req.session.userId!));
+  if (payout > 0) await db.update(usersTable).set({ balance: sql`${usersTable.balance} + ${payout}` }).where(eq(usersTable.id, req.session.userId!));
+
+  await db.insert(gameSessionsTable).values({
+    userId: req.session.userId!, gameType: "coinflip", betAmount: String(amount), difficulty,
+    status: won ? "won" : "lost", multiplier: String(multiplier), payout: String(payout),
+    gameState: { picks, drawn, matches }, endedAt: new Date(),
+  });
+
+  res.json({ drawn, matches, multiplier, payout, won, newBalance: Number(user.balance) - amount + payout });
+});
+
+// ─── Roulette ───────────────────────────────────────────────────────────────
+
+const RED_NUMBERS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+
+function getRouletteMultiplier(betType: string, betValue: string | number, result: number, difficulty: string): number {
+  const edge = difficulty === "easy" ? 0.90 : difficulty === "hard" ? 0.82 : 0.86;
+  if (betType === "number") {
+    return result === Number(betValue) ? Math.round(36 * edge * 100) / 100 : 0;
+  }
+  if (betType === "rouge") return (result > 0 && RED_NUMBERS.has(result)) ? Math.round(2 * edge * 100) / 100 : 0;
+  if (betType === "noir") return (result > 0 && !RED_NUMBERS.has(result)) ? Math.round(2 * edge * 100) / 100 : 0;
+  if (betType === "pair") return (result > 0 && result % 2 === 0) ? Math.round(2 * edge * 100) / 100 : 0;
+  if (betType === "impair") return (result > 0 && result % 2 !== 0) ? Math.round(2 * edge * 100) / 100 : 0;
+  if (betType === "douzaine1") return (result >= 1 && result <= 12) ? Math.round(3 * edge * 100) / 100 : 0;
+  if (betType === "douzaine2") return (result >= 13 && result <= 24) ? Math.round(3 * edge * 100) / 100 : 0;
+  if (betType === "douzaine3") return (result >= 25 && result <= 36) ? Math.round(3 * edge * 100) / 100 : 0;
+  return 0;
+}
+
+router.post("/roulette", async (req, res) => {
+  if (!requireAuth(req, res)) return;
+
+  const { betAmount, difficulty, betType, betValue } = req.body;
+  const validBetTypes = ["number","rouge","noir","pair","impair","douzaine1","douzaine2","douzaine3"];
+  if (!betAmount || !difficulty || !betType) { res.status(400).json({ error: "Missing fields" }); return; }
+  if (!["easy", "medium", "hard"].includes(difficulty)) { res.status(400).json({ error: "Invalid difficulty" }); return; }
+  if (!validBetTypes.includes(betType)) { res.status(400).json({ error: "Invalid bet type" }); return; }
+
+  const amount = Number(betAmount);
+  if (isNaN(amount) || amount < MIN_BET) { res.status(400).json({ error: `Mise minimum : $${MIN_BET}` }); return; }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
+  if (!user || Number(user.balance) < amount) { res.status(400).json({ error: "Solde insuffisant" }); return; }
+
+  const result = Math.floor(Math.random() * 37); // 0–36
+  const multiplier = getRouletteMultiplier(betType, betValue, result, difficulty);
+  const payout = Math.round(amount * multiplier * 100) / 100;
+  const won = payout > 0;
+  const isRed = result > 0 && RED_NUMBERS.has(result);
+
+  await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${amount}` }).where(eq(usersTable.id, req.session.userId!));
+  if (payout > 0) await db.update(usersTable).set({ balance: sql`${usersTable.balance} + ${payout}` }).where(eq(usersTable.id, req.session.userId!));
+
+  await db.insert(gameSessionsTable).values({
+    userId: req.session.userId!, gameType: "coinflip", betAmount: String(amount), difficulty,
+    status: won ? "won" : "lost", multiplier: String(multiplier), payout: String(payout),
+    gameState: { result, betType, betValue, isRed }, endedAt: new Date(),
+  });
+
+  res.json({ result, isRed, multiplier, payout, won, newBalance: Number(user.balance) - amount + payout });
+});
+
 // ─── History ────────────────────────────────────────────────────────────────
 
 router.get("/history", async (req, res) => {
