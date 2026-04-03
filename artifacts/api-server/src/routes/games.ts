@@ -409,9 +409,12 @@ router.post("/crash/:id/cashout", async (req, res) => {
 router.post("/dice", async (req, res) => {
   if (!requireAuth(req, res)) return;
 
-  const { betAmount, difficulty } = req.body;
-  if (!betAmount || !difficulty) { res.status(400).json({ error: "Missing fields" }); return; }
-  if (!["easy", "medium", "hard"].includes(difficulty)) { res.status(400).json({ error: "Invalid difficulty" }); return; }
+  const { betAmount, threshold, direction } = req.body;
+  if (!betAmount || threshold === undefined || !direction) { res.status(400).json({ error: "Missing fields" }); return; }
+  if (!["over", "under"].includes(direction)) { res.status(400).json({ error: "Direction invalide" }); return; }
+
+  const thresh = Number(threshold);
+  if (isNaN(thresh) || thresh < 2 || thresh > 98) { res.status(400).json({ error: "Seuil entre 2 et 98" }); return; }
 
   const amount = Number(betAmount);
   if (isNaN(amount) || amount < MIN_BET) { res.status(400).json({ error: `Mise minimum : $${MIN_BET}` }); return; }
@@ -419,26 +422,25 @@ router.post("/dice", async (req, res) => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!)).limit(1);
   if (!user || Number(user.balance) < amount) { res.status(400).json({ error: "Solde insuffisant" }); return; }
 
-  // Threshold: easy=50, medium=65, hard=80 — must roll OVER to win
-  const thresholds: Record<string, number> = { easy: 50, medium: 65, hard: 80 };
-  const multipliers: Record<string, number> = { easy: 1.88, medium: 2.65, hard: 4.56 };
+  // Win probability and multiplier with 4% house edge
+  const winChance = direction === "over" ? (100 - thresh) / 100 : (thresh - 1) / 100;
+  if (winChance <= 0 || winChance >= 1) { res.status(400).json({ error: "Seuil invalide" }); return; }
+  const multiplier = Math.round((0.96 / winChance) * 100) / 100;
 
-  const threshold = thresholds[difficulty];
-  const multiplier = multipliers[difficulty];
   const roll = Math.floor(Math.random() * 100) + 1; // 1–100
-  const won = roll > threshold;
+  const won = direction === "over" ? roll > thresh : roll < thresh;
   const payout = won ? Math.round(amount * multiplier * 100) / 100 : 0;
 
   await db.update(usersTable).set({ balance: sql`${usersTable.balance} - ${amount}` }).where(eq(usersTable.id, req.session.userId!));
   if (won) await db.update(usersTable).set({ balance: sql`${usersTable.balance} + ${payout}` }).where(eq(usersTable.id, req.session.userId!));
 
   await db.insert(gameSessionsTable).values({
-    userId: req.session.userId!, gameType: "coinflip", betAmount: String(amount), difficulty,
+    userId: req.session.userId!, gameType: "coinflip", betAmount: String(amount), difficulty: "custom",
     status: won ? "won" : "lost", multiplier: String(won ? multiplier : 0), payout: String(payout),
-    gameState: { roll, threshold }, endedAt: new Date(),
+    gameState: { roll, threshold: thresh, direction }, endedAt: new Date(),
   });
 
-  res.json({ roll, threshold, won, payout, multiplier, newBalance: Number(user.balance) - amount + payout });
+  res.json({ roll, threshold: thresh, direction, won, payout, multiplier, winChance: Math.round(winChance * 100), newBalance: Number(user.balance) - amount + payout });
 });
 
 // ─── Keno ───────────────────────────────────────────────────────────────────
