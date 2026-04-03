@@ -1,285 +1,238 @@
 import { AppLayout } from "@/components/layout";
 import { useRequireAuth, useAuth } from "@/hooks/use-auth-wrapper";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui-core";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CircleDot, ArrowLeft, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
+type Phase = "idle" | "flipping" | "result";
+type Side = "pile" | "face";
+interface Result { result: Side; won: boolean; payout: number; multiplier: number; }
+
 const DIFFICULTIES = [
-  { value: "easy", label: "Facile", multiplier: "1.4×", desc: "Marge élevée", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
-  { value: "medium", label: "Moyen", multiplier: "1.6×", desc: "Marge forte", color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
-  { value: "hard", label: "Difficile", multiplier: "1.85×", desc: "Risque max", color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
+  { value: "easy",   label: "Facile",   mult: 1.4,  chance: 69 },
+  { value: "medium", label: "Moyen",    mult: 1.6,  chance: 60 },
+  { value: "hard",   label: "Difficile",mult: 1.85, chance: 52 },
 ];
-
-type GameState = "idle" | "flipping" | "result";
-
-interface Result {
-  result: "pile" | "face";
-  won: boolean;
-  payout: number;
-  multiplier: number;
-}
 
 export default function CoinFlip() {
   useRequireAuth();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
   const [difficulty, setDifficulty] = useState("medium");
-  const [betAmount, setBetAmount] = useState("9");
-  const [choice, setChoice] = useState<"pile" | "face">("pile");
-  const [gameState, setGameState] = useState<GameState>("idle");
+  const [betAmount, setBetAmount] = useState(9);
+  const [choice, setChoice] = useState<Side>("pile");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Result | null>(null);
+  const [animSide, setAnimSide] = useState<Side | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const balance = user?.balance ?? 0;
+  const balance = Number(user?.balance ?? 0);
+  const diff = DIFFICULTIES.find(d => d.value === difficulty)!;
+  const gain = Math.round(betAmount * diff.mult * 100) / 100;
 
   async function play() {
     setError(null);
-    const amount = Number(betAmount);
-    if (isNaN(amount) || amount < 9) {
-      setError("Mise minimum : $9");
-      return;
-    }
-    if (amount > Number(balance)) {
-      setError("Solde insuffisant");
-      return;
-    }
-
-    setGameState("flipping");
+    if (betAmount < 9) { setError("Mise minimum : $9"); return; }
+    if (betAmount > balance) { setError("Solde insuffisant"); return; }
+    setPhase("flipping");
     setResult(null);
-
+    let ticks = 0;
+    const tick = setInterval(() => {
+      setAnimSide(ticks % 2 === 0 ? "pile" : "face");
+      if (++ticks > 10) clearInterval(tick);
+    }, 120);
     try {
       const res = await fetch("/api/games/coinflip", {
-        method: "POST",
+        method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ betAmount: amount, choice, difficulty }),
+        body: JSON.stringify({ betAmount, choice, difficulty }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur");
-
       await new Promise(r => setTimeout(r, 1400));
+      clearInterval(tick);
+      setAnimSide(data.result);
       setResult(data);
-      setGameState("result");
-      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      setPhase("result");
+      qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
     } catch (e: any) {
+      clearInterval(tick);
       setError(e.message);
-      setGameState("idle");
+      setPhase("idle");
     }
   }
 
-  function reset() {
-    setGameState("idle");
-    setResult(null);
-    setError(null);
-  }
+  function reset() { setPhase("idle"); setResult(null); setAnimSide(null); setError(null); }
 
-  const chosenDiff = DIFFICULTIES.find(d => d.value === difficulty)!;
+  const displaySide = animSide ?? (phase === "idle" ? null : null);
+  const isFlipping = phase === "flipping";
 
   return (
     <AppLayout>
-      <div className="max-w-lg mx-auto space-y-5">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+      <div className="max-w-md mx-auto flex flex-col gap-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
           <Link href="/games">
             <button className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/8 transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-500 flex items-center justify-center">
-            <CircleDot className="w-5 h-5 text-zinc-950" />
+          <h1 className="text-lg font-bold text-white tracking-wide">PILE OU FACE</h1>
+          <div className="ml-auto text-right">
+            <p className="text-xs text-zinc-500">Solde</p>
+            <p className="text-sm font-bold text-white">${balance.toFixed(2)}</p>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Pile ou Face</h1>
-            <p className="text-xs text-zinc-500">Solde : ${Number(balance).toFixed(2)}</p>
-          </div>
-        </motion.div>
+        </div>
 
-        {/* Coin Visual */}
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.05 }}>
-          <Card>
-            <CardContent className="py-10 flex flex-col items-center gap-6">
-              <AnimatePresence mode="wait">
-                {gameState === "flipping" ? (
-                  <motion.div
-                    key="flipping"
-                    animate={{ rotateY: [0, 360, 720, 1080] }}
-                    transition={{ duration: 1.4, ease: "easeInOut" }}
-                    className="w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 shadow-xl shadow-amber-500/30 flex items-center justify-center"
-                  >
-                    <CircleDot className="w-12 h-12 text-zinc-950" />
-                  </motion.div>
-                ) : gameState === "result" && result ? (
-                  <motion.div
-                    key="result"
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", bounce: 0.4 }}
-                    className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl ${
-                      result.won
-                        ? "bg-gradient-to-br from-emerald-400 to-cyan-500 shadow-emerald-500/30"
-                        : "bg-gradient-to-br from-rose-500 to-red-700 shadow-rose-500/30"
-                    }`}
-                  >
-                    <span className="text-3xl font-black text-white">
-                      {result.result === "pile" ? "P" : "F"}
-                    </span>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="idle"
-                    className="w-28 h-28 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border-2 border-white/10 shadow-lg flex items-center justify-center"
-                  >
-                    <span className="text-2xl font-black text-zinc-400">
-                      {choice === "pile" ? "P" : "F"}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <AnimatePresence mode="wait">
-                {gameState === "result" && result ? (
-                  <motion.div
-                    key="result-text"
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center space-y-1"
-                  >
-                    <p className={`text-2xl font-black ${result.won ? "text-emerald-400" : "text-rose-400"}`}>
-                      {result.won ? `+$${result.payout.toFixed(2)}` : `-$${betAmount}`}
-                    </p>
-                    <p className="text-sm text-zinc-500">
-                      Résultat : <span className="text-white font-semibold capitalize">{result.result}</span>
-                      {result.won ? (
-                        <span className="text-emerald-400 ml-2 inline-flex items-center gap-1">
-                          <TrendingUp className="w-3.5 h-3.5" /> {result.multiplier}×
-                        </span>
-                      ) : (
-                        <span className="text-rose-400 ml-2 inline-flex items-center gap-1">
-                          <TrendingDown className="w-3.5 h-3.5" /> Perdu
-                        </span>
-                      )}
-                    </p>
-                  </motion.div>
-                ) : gameState === "flipping" ? (
-                  <motion.p key="flipping-text" className="text-zinc-400 font-semibold animate-pulse">
-                    Lancement en cours...
-                  </motion.p>
-                ) : (
-                  <motion.p key="idle-text" className="text-zinc-500 text-sm">
-                    Choisis ton côté et mise
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {gameState !== "result" ? (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="space-y-4">
-            {/* Choice */}
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Ton choix</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-2 gap-3">
-                {["pile", "face"].map(c => (
-                  <button
-                    key={c}
-                    onClick={() => setChoice(c as "pile" | "face")}
-                    disabled={gameState === "flipping"}
-                    className={`py-3 rounded-xl border font-bold text-sm transition-all ${
-                      choice === c
-                        ? "border-amber-500/50 bg-amber-500/15 text-amber-400"
-                        : "border-white/8 bg-white/3 text-zinc-400 hover:border-white/15 hover:text-white"
-                    }`}
-                  >
-                    {c === "pile" ? "🟡 Pile" : "⚪ Face"}
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Difficulty */}
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Difficulté</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-3 gap-2">
-                {DIFFICULTIES.map(d => (
-                  <button
-                    key={d.value}
-                    onClick={() => setDifficulty(d.value)}
-                    disabled={gameState === "flipping"}
-                    className={`p-3 rounded-xl border text-center transition-all ${
-                      difficulty === d.value ? d.color : "border-white/8 bg-white/3 text-zinc-500 hover:border-white/15"
-                    }`}
-                  >
-                    <p className="font-bold text-xs">{d.label}</p>
-                    <p className="text-base font-black mt-0.5">{d.multiplier}</p>
-                  </button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Bet */}
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Mise</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
-                  <input
-                    type="number"
-                    min="9"
-                    step="1"
-                    value={betAmount}
-                    onChange={e => setBetAmount(e.target.value)}
-                    disabled={gameState === "flipping"}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-8 text-white font-bold text-lg focus:outline-none focus:border-amber-500/50 focus:bg-white/8 transition-all"
-                    placeholder="9"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  {[9, 25, 50, 100].map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setBetAmount(String(Math.min(v, Number(balance))))}
-                      className="flex-1 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-all font-semibold"
-                    >
-                      ${v}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-zinc-600">
-                  Gain potentiel : <span className="text-amber-400 font-semibold">
-                    ${(Number(betAmount || 0) * (chosenDiff ? Number(chosenDiff.multiplier) : 0)).toFixed(2)}
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-
-            {error && (
-              <p className="text-rose-400 text-sm text-center font-medium">{error}</p>
-            )}
-
-            <Button
-              className="w-full h-12 text-base font-bold"
-              onClick={play}
-              disabled={gameState === "flipping"}
-              isLoading={gameState === "flipping"}
+        {/* Main display — Ton choix | Résultat */}
+        <div className="flex items-end justify-between mb-8 px-2">
+          <div className="text-center">
+            <motion.div
+              animate={isFlipping ? { rotateY: [0, 180, 360, 540, 720] } : {}}
+              transition={{ duration: 1.4, ease: "easeInOut" }}
+              className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl text-5xl font-black mx-auto ${
+                choice === "pile"
+                  ? "bg-gradient-to-br from-amber-400 to-amber-600 shadow-amber-500/30 text-zinc-900"
+                  : "bg-gradient-to-br from-zinc-300 to-zinc-400 shadow-zinc-400/20 text-zinc-900"
+              }`}
             >
-              🎯 Lancer la pièce
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <Button className="w-full h-12 text-base font-bold" onClick={reset}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Rejouer
-            </Button>
-            <Link href="/games">
-              <Button variant="ghost" className="w-full">Retour aux jeux</Button>
-            </Link>
-          </motion.div>
-        )}
+              {choice === "pile" ? "P" : "F"}
+            </motion.div>
+            <p className="text-xs text-zinc-500 mt-3 font-medium">Ton choix</p>
+          </div>
+
+          <div className="flex flex-col items-center pb-8">
+            <span className="text-zinc-700 text-2xl font-black">VS</span>
+          </div>
+
+          <div className="text-center">
+            <AnimatePresence mode="wait">
+              {phase === "idle" ? (
+                <motion.div key="idle"
+                  className="w-28 h-28 rounded-full bg-white/5 border-2 border-dashed border-white/15 flex items-center justify-center mx-auto">
+                  <span className="text-4xl text-zinc-700">?</span>
+                </motion.div>
+              ) : (
+                <motion.div key={displaySide ?? "flip"}
+                  initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  className={`w-28 h-28 rounded-full flex items-center justify-center shadow-xl text-5xl font-black mx-auto ${
+                    phase === "result" && result
+                      ? result.won
+                        ? "bg-gradient-to-br from-emerald-400 to-emerald-600 shadow-emerald-500/30 text-white"
+                        : "bg-gradient-to-br from-rose-500 to-rose-700 shadow-rose-500/30 text-white"
+                      : displaySide === "pile"
+                        ? "bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-900"
+                        : "bg-gradient-to-br from-zinc-300 to-zinc-400 text-zinc-900"
+                  }`}
+                >
+                  {displaySide ? (displaySide === "pile" ? "P" : "F") : "?"}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <p className="text-xs text-zinc-500 mt-3 font-medium">Résultat</p>
+          </div>
+        </div>
+
+        {/* Result banner */}
+        <AnimatePresence>
+          {phase === "result" && result && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+              className={`mb-4 rounded-xl py-3 px-4 text-center font-bold text-lg ${
+                result.won ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400"
+                           : "bg-rose-500/15 border border-rose-500/30 text-rose-400"
+              }`}>
+              {result.won ? `+$${result.payout.toFixed(2)} — Gagné !` : "Perdu"}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-white font-black text-lg">x{diff.mult.toFixed(2)}</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Multiplicateur</p>
+          </div>
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-amber-400 font-black text-lg">${gain.toFixed(2)}</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Gain possible</p>
+          </div>
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-white font-black text-lg">{diff.chance}%</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Chance</p>
+          </div>
+        </div>
+
+        {/* Difficulty */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {DIFFICULTIES.map(d => (
+            <button key={d.value} onClick={() => { setDifficulty(d.value); reset(); }} disabled={isFlipping}
+              className={`py-2.5 rounded-xl border text-center font-bold text-xs transition-all ${
+                difficulty === d.value
+                  ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                  : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+              }`}>
+              <p>{d.label}</p>
+              <p className="text-[11px] font-black mt-0.5">{d.mult}×</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Choice */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {(["pile", "face"] as Side[]).map(s => (
+            <button key={s} onClick={() => { setChoice(s); reset(); }} disabled={isFlipping}
+              className={`py-3 rounded-xl border font-bold text-sm transition-all ${
+                choice === s
+                  ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                  : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+              }`}>
+              {s === "pile" ? "🟡 Pile" : "⚪ Face"}
+            </button>
+          ))}
+        </div>
+
+        {/* Bet + Pari */}
+        <div className="flex items-stretch gap-3">
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className="flex items-center px-3 py-3 gap-2">
+              <span className="text-zinc-400 font-bold text-sm">$</span>
+              <input type="number" min="9" step="1" value={betAmount}
+                onChange={e => { setBetAmount(Number(e.target.value)); reset(); }}
+                disabled={isFlipping}
+                className="flex-1 bg-transparent text-white font-bold text-base focus:outline-none w-0" />
+            </div>
+            <div className="flex border-t border-white/6">
+              <button onClick={() => { setBetAmount(a => Math.max(9, Math.floor(a / 2))); reset(); }}
+                disabled={isFlipping}
+                className="flex-1 py-1.5 text-xs font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all border-r border-white/6">
+                /2
+              </button>
+              <button onClick={() => { setBetAmount(a => Math.min(balance, a * 2)); reset(); }}
+                disabled={isFlipping}
+                className="flex-1 py-1.5 text-xs font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all">
+                x2
+              </button>
+            </div>
+          </div>
+          <button onClick={phase === "result" ? reset : play} disabled={isFlipping}
+            className={`px-8 rounded-xl font-black text-base transition-all ${
+              isFlipping ? "bg-blue-600/50 text-blue-300 cursor-not-allowed"
+                         : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+            }`}>
+            {isFlipping ? <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              : phase === "result" ? "Rejouer" : "Pari 🪙"}
+          </button>
+        </div>
+
+        {error && <p className="text-rose-400 text-sm text-center font-medium mt-3">{error}</p>}
+        <div className="mt-4 text-center">
+          <Link href="/games"><span className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">← Retour aux jeux</span></Link>
+        </div>
       </div>
     </AppLayout>
   );

@@ -1,85 +1,95 @@
 import { AppLayout } from "@/components/layout";
 import { useRequireAuth, useAuth } from "@/hooks/use-auth-wrapper";
-import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui-core";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CircleDot, ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
-const RED_NUMS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-
-const DIFFICULTIES = [
-  { value: "easy",   label: "Facile",    edge: "10% marge", multipliers: { color: "1.80×", dozen: "2.70×", number: "32×" } },
-  { value: "medium", label: "Moyen",     edge: "14% marge", multipliers: { color: "1.72×", dozen: "2.58×", number: "31×" } },
-  { value: "hard",   label: "Difficile", edge: "18% marge", multipliers: { color: "1.64×", dozen: "2.46×", number: "29×" } },
-];
-
-const BET_TYPES = [
-  { value: "rouge",     label: "🔴 Rouge",    group: "color",  desc: "18 numéros" },
-  { value: "noir",      label: "⚫ Noir",     group: "color",  desc: "18 numéros" },
-  { value: "pair",      label: "2️⃣ Pair",     group: "color",  desc: "1–36 pairs" },
-  { value: "impair",    label: "1️⃣ Impair",   group: "color",  desc: "1–36 impairs" },
-  { value: "douzaine1", label: "1–12",         group: "dozen",  desc: "Douzaine" },
-  { value: "douzaine2", label: "13–24",        group: "dozen",  desc: "Douzaine" },
-  { value: "douzaine3", label: "25–36",        group: "dozen",  desc: "Douzaine" },
-];
-
-type Phase = "setup" | "spinning" | "result";
+type Phase = "idle" | "spinning" | "result";
+type BetGroup = "color" | "dozen" | "number";
 interface Result { result: number; isRed: boolean; multiplier: number; payout: number; won: boolean; }
 
-function numColor(n: number) {
-  if (n === 0) return "bg-emerald-600 text-white";
-  return RED_NUMS.has(n) ? "bg-rose-600 text-white" : "bg-zinc-800 text-white";
+const RED_NUMS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+
+const BET_TYPES = [
+  { value: "rouge",     label: "🔴 Rouge",   group: "color"  as BetGroup },
+  { value: "noir",      label: "⚫ Noir",    group: "color"  as BetGroup },
+  { value: "pair",      label: "Pair",       group: "color"  as BetGroup },
+  { value: "impair",    label: "Impair",     group: "color"  as BetGroup },
+  { value: "douzaine1", label: "1 – 12",     group: "dozen"  as BetGroup },
+  { value: "douzaine2", label: "13 – 24",    group: "dozen"  as BetGroup },
+  { value: "douzaine3", label: "25 – 36",    group: "dozen"  as BetGroup },
+];
+
+const MULTIPLIERS: Record<string, Record<string, number>> = {
+  easy:   { color: 1.80, dozen: 2.70, number: 32 },
+  medium: { color: 1.72, dozen: 2.58, number: 31 },
+  hard:   { color: 1.64, dozen: 2.46, number: 29 },
+};
+
+function numColor(n: number): string {
+  if (n === 0) return "bg-emerald-600";
+  return RED_NUMS.has(n) ? "bg-rose-600" : "bg-zinc-700";
 }
 
 export default function Roulette() {
   useRequireAuth();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [difficulty, setDifficulty] = useState("medium");
-  const [betAmount, setBetAmount] = useState("9");
+
   const [betType, setBetType] = useState("rouge");
   const [betNumber, setBetNumber] = useState<number | null>(null);
   const [useNumber, setUseNumber] = useState(false);
-  const [phase, setPhase] = useState<Phase>("setup");
+  const [difficulty, setDifficulty] = useState("medium");
+  const [betAmount, setBetAmount] = useState(9);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<Result | null>(null);
   const [spinNum, setSpinNum] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const balance = user?.balance ?? 0;
-  const diff = DIFFICULTIES.find(d => d.value === difficulty)!;
+  const balance = Number(user?.balance ?? 0);
 
   const activeBetType = useNumber ? "number" : betType;
   const activeBetValue = useNumber ? betNumber : null;
+  const mults = MULTIPLIERS[difficulty];
+
+  const currentMult = useMemo(() => {
+    if (useNumber) return mults.number;
+    const t = BET_TYPES.find(b => b.value === betType);
+    return t ? mults[t.group] : mults.color;
+  }, [useNumber, betType, difficulty]);
+
+  const winChancePct = useMemo(() => {
+    if (useNumber) return Math.round(100 / 37);
+    if (betType.startsWith("douzaine")) return Math.round(12 / 37 * 100);
+    return Math.round(18 / 37 * 100);
+  }, [useNumber, betType]);
+
+  const gain = Math.round(betAmount * currentMult * 100) / 100;
 
   async function spin() {
     setError(null);
     if (useNumber && betNumber === null) { setError("Choisis un numéro (0–36)"); return; }
-    const amount = Number(betAmount);
-    if (isNaN(amount) || amount < 9) { setError("Mise minimum : $9"); return; }
-    if (amount > Number(balance)) { setError("Solde insuffisant"); return; }
-
+    if (betAmount < 9) { setError("Mise minimum : $9"); return; }
+    if (betAmount > balance) { setError("Solde insuffisant"); return; }
     setPhase("spinning");
-    setSpinNum(null);
-
+    setResult(null);
     let ticks = 0;
     const tick = setInterval(() => {
       setSpinNum(Math.floor(Math.random() * 37));
-      if (++ticks > 18) clearInterval(tick);
-    }, 80);
-
+      if (++ticks > 20) clearInterval(tick);
+    }, 70);
     try {
       const res = await fetch("/api/games/roulette", {
         method: "POST", credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ betAmount: amount, difficulty, betType: activeBetType, betValue: activeBetValue }),
+        body: JSON.stringify({ betAmount, difficulty, betType: activeBetType, betValue: activeBetValue }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Erreur");
-
-      await new Promise(r => setTimeout(r, 1600));
+      await new Promise(r => setTimeout(r, 1500));
       clearInterval(tick);
       setSpinNum(data.result);
       setResult(data);
@@ -88,191 +98,205 @@ export default function Roulette() {
     } catch (e: any) {
       clearInterval(tick);
       setError(e.message);
-      setPhase("setup");
+      setPhase("idle");
     }
   }
 
-  function reset() { setPhase("setup"); setResult(null); setSpinNum(null); setError(null); }
+  function reset() { setPhase("idle"); setResult(null); setSpinNum(null); setError(null); }
+
+  const displayNum = spinNum;
 
   return (
     <AppLayout>
-      <div className="max-w-lg mx-auto space-y-5">
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
+      <div className="max-w-md mx-auto flex flex-col gap-0">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
           <Link href="/games">
             <button className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-white/8 transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
           </Link>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center">
-            <CircleDot className="w-5 h-5 text-white" />
+          <h1 className="text-lg font-bold text-white tracking-wide">ROULETTE</h1>
+          <div className="ml-auto text-right">
+            <p className="text-xs text-zinc-500">Solde</p>
+            <p className="text-sm font-bold text-white">${balance.toFixed(2)}</p>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white">Roulette</h1>
-            <p className="text-xs text-zinc-500">Solde : ${Number(balance).toFixed(2)}</p>
-          </div>
-        </motion.div>
+        </div>
 
-        {/* Ball display */}
-        <Card>
-          <CardContent className="py-10 flex flex-col items-center gap-5">
-            <motion.div
-              animate={phase === "spinning" ? { rotate: 360 } : {}}
-              transition={{ duration: 0.4, repeat: phase === "spinning" ? Infinity : 0, ease: "linear" }}
-              className="relative w-36 h-36"
-            >
-              {/* Outer ring */}
-              <div className="absolute inset-0 rounded-full border-4 border-white/10 bg-gradient-to-br from-zinc-800 to-zinc-900" />
-              {/* Color segments hint */}
-              <div className="absolute inset-3 rounded-full overflow-hidden flex">
-                <div className="flex-1 bg-rose-700/40" />
-                <div className="flex-1 bg-zinc-800/60" />
-              </div>
-              {/* Center number */}
-              <div className={`absolute inset-8 rounded-full flex items-center justify-center font-black text-2xl shadow-inner ${
-                spinNum !== null ? numColor(spinNum) :
-                phase === "result" && result ? numColor(result.result) : "bg-zinc-800 text-zinc-500"
-              }`}>
-                {phase === "setup" ? <CircleDot className="w-8 h-8 text-zinc-600" /> : (spinNum ?? result?.result ?? "?")}
-              </div>
-            </motion.div>
-
-            <AnimatePresence mode="wait">
-              {phase === "result" && result ? (
-                <motion.div key="res" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-1">
-                  <p className="text-sm text-zinc-400">
-                    <span className={`font-bold ${result.isRed ? "text-rose-400" : result.result === 0 ? "text-emerald-400" : "text-white"}`}>
-                      {result.result} {result.result === 0 ? "🟢" : result.isRed ? "🔴" : "⚫"}
-                    </span>
-                  </p>
-                  <p className={`text-2xl font-black ${result.won ? "text-emerald-400" : "text-rose-400"}`}>
-                    {result.won ? `+$${result.payout.toFixed(2)}` : "Perdu"}
-                  </p>
-                  {result.won && <p className="text-xs text-zinc-500">{result.multiplier}× la mise</p>}
-                </motion.div>
-              ) : phase === "spinning" ? (
-                <motion.p key="spin" className="text-zinc-400 font-semibold animate-pulse text-sm">La bille tourne...</motion.p>
-              ) : (
-                <motion.p key="idle" className="text-zinc-600 text-sm">Choisis ta mise et lance</motion.p>
-              )}
-            </AnimatePresence>
-          </CardContent>
-        </Card>
-
-        {phase !== "result" ? (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            {/* Difficulty */}
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Difficulté</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-3 gap-2">
-                {DIFFICULTIES.map(d => {
-                  const active = difficulty === d.value;
-                  return (
-                    <button key={d.value} onClick={() => setDifficulty(d.value)} disabled={phase === "spinning"}
-                      className={`p-3 rounded-xl border text-center transition-all ${active ? "border-rose-500/40 bg-rose-500/10 text-rose-400" : "border-white/8 bg-white/3 text-zinc-500 hover:border-white/15"}`}>
-                      <p className="font-bold text-xs">{d.label}</p>
-                      <p className="text-[10px] text-zinc-500 mt-1">{d.edge}</p>
-                    </button>
-                  );
-                })}
-              </CardContent>
-            </Card>
-
-            {/* Bet type */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm">Type de mise</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-zinc-500">Numéro précis ({diff.multipliers.number})</span>
-                    <button
-                      onClick={() => setUseNumber(n => !n)}
-                      className={`w-10 h-5 rounded-full transition-all relative ${useNumber ? "bg-rose-500" : "bg-white/10"}`}
-                    >
-                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${useNumber ? "left-5" : "left-0.5"}`} />
-                    </button>
-                  </div>
+        {/* Big result display */}
+        <div className="flex flex-col items-center mb-6" style={{ minHeight: 180 }}>
+          <AnimatePresence mode="wait">
+            {phase === "idle" ? (
+              <motion.div key="idle" className="flex flex-col items-center gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="w-32 h-32 rounded-full bg-white/5 border-2 border-dashed border-white/15 flex items-center justify-center">
+                  <span className="text-5xl font-black text-zinc-700">?</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {useNumber ? (
-                  <div className="space-y-3">
-                    <p className="text-xs text-zinc-500">Choisis un numéro (0–36) — gain {diff.multipliers.number}</p>
-                    <div className="grid grid-cols-9 gap-1">
+                <p className="text-zinc-600 text-sm">Choisis ta mise et lance</p>
+              </motion.div>
+            ) : (
+              <motion.div key="spinning" className="flex flex-col items-center gap-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <motion.div
+                  animate={phase === "spinning" ? { rotate: 360 } : {}}
+                  transition={{ duration: 0.3, repeat: phase === "spinning" ? Infinity : 0, ease: "linear" }}
+                  className="relative w-32 h-32"
+                >
+                  <div className={`w-full h-full rounded-full flex items-center justify-center text-6xl font-black text-white shadow-xl ${
+                    phase === "result" && result
+                      ? result.isRed ? "bg-rose-600 shadow-rose-500/30"
+                      : result.result === 0 ? "bg-emerald-700 shadow-emerald-500/30"
+                      : "bg-zinc-700 shadow-zinc-500/20"
+                      : displayNum !== null ? numColor(displayNum) + " transition-colors"
+                      : "bg-zinc-800"
+                  }`}>
+                    {displayNum !== null ? displayNum : "?"}
+                  </div>
+                </motion.div>
+                {phase === "result" && result && (
+                  <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+                    <p className={`text-2xl font-black ${result.won ? "text-emerald-400" : "text-rose-400"}`}>
+                      {result.won ? `+$${result.payout.toFixed(2)}` : "Perdu"}
+                    </p>
+                    <p className="text-zinc-500 text-xs mt-1">
+                      {result.result} — {result.result === 0 ? "🟢 Zéro" : result.isRed ? "🔴 Rouge" : "⚫ Noir"}
+                      {result.result > 0 && (result.result % 2 === 0 ? " • Pair" : " • Impair")}
+                    </p>
+                  </motion.div>
+                )}
+                {phase === "spinning" && <p className="text-zinc-400 text-sm animate-pulse">La bille tourne...</p>}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-white font-black text-lg">x{currentMult}</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Multiplicateur</p>
+          </div>
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-amber-400 font-black text-lg">${gain.toFixed(2)}</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Gain possible</p>
+          </div>
+          <div className="bg-white/5 border border-white/8 rounded-xl p-3 text-center">
+            <p className="text-white font-black text-lg">{winChancePct}%</p>
+            <p className="text-zinc-500 text-[10px] font-medium mt-0.5">Chance</p>
+          </div>
+        </div>
+
+        {/* Bet type tabs */}
+        {phase !== "spinning" && (
+          <>
+            {/* Color/Dozen bets */}
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {BET_TYPES.filter(b => b.group === "color").map(b => (
+                <button key={b.value}
+                  onClick={() => { setBetType(b.value); setUseNumber(false); reset(); }}
+                  className={`py-2 rounded-xl border text-center font-bold text-xs transition-all ${
+                    !useNumber && betType === b.value
+                      ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                      : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+                  }`}>
+                  {b.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {BET_TYPES.filter(b => b.group === "dozen").map(b => (
+                <button key={b.value}
+                  onClick={() => { setBetType(b.value); setUseNumber(false); reset(); }}
+                  className={`py-2 rounded-xl border text-center font-bold text-xs transition-all ${
+                    !useNumber && betType === b.value
+                      ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                      : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+                  }`}>
+                  {b.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Number toggle + picker */}
+            <div className="mb-4">
+              <button onClick={() => { setUseNumber(n => !n); reset(); }}
+                className={`w-full py-2.5 rounded-xl border font-bold text-sm transition-all mb-2 ${
+                  useNumber ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                            : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+                }`}>
+                Numéro précis — {mults.number}×
+                {betNumber !== null && useNumber ? ` (${betNumber} sélectionné)` : ""}
+              </button>
+              <AnimatePresence>
+                {useNumber && (
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+                    <div className="grid grid-cols-9 gap-1 bg-white/3 border border-white/8 rounded-xl p-3">
                       {Array.from({ length: 37 }, (_, i) => i).map(n => (
-                        <button key={n} onClick={() => setBetNumber(n)}
-                          disabled={phase === "spinning"}
+                        <button key={n} onClick={() => { setBetNumber(n); reset(); }}
                           className={`aspect-square rounded-md text-xs font-bold transition-all ${
                             betNumber === n
-                              ? "ring-2 ring-white scale-110 " + (n === 0 ? "bg-emerald-600" : RED_NUMS.has(n) ? "bg-rose-600" : "bg-zinc-600")
-                              : n === 0 ? "bg-emerald-800/60 text-emerald-300 hover:bg-emerald-700/60"
+                              ? `ring-2 ring-white scale-110 ${n === 0 ? "bg-emerald-600" : RED_NUMS.has(n) ? "bg-rose-600" : "bg-zinc-600"}`
+                              : n === 0 ? "bg-emerald-900/60 text-emerald-300 hover:bg-emerald-700/60"
                               : RED_NUMS.has(n) ? "bg-rose-900/60 text-rose-300 hover:bg-rose-800/60"
                               : "bg-zinc-800/60 text-zinc-300 hover:bg-zinc-700/60"
-                          }`}
-                        >{n}</button>
+                          }`}>{n}</button>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      {BET_TYPES.filter(b => b.group === "color").map(b => (
-                        <button key={b.value} onClick={() => setBetType(b.value)} disabled={phase === "spinning"}
-                          className={`p-3 rounded-xl border text-center transition-all ${betType === b.value ? "border-rose-500/50 bg-rose-500/15 text-white" : "border-white/8 bg-white/3 text-zinc-400 hover:border-white/15 hover:text-white"}`}>
-                          <p className="font-semibold text-sm">{b.label}</p>
-                          <p className="text-[10px] text-zinc-500 mt-0.5">{diff.multipliers.color}</p>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {BET_TYPES.filter(b => b.group === "dozen").map(b => (
-                        <button key={b.value} onClick={() => setBetType(b.value)} disabled={phase === "spinning"}
-                          className={`p-3 rounded-xl border text-center transition-all ${betType === b.value ? "border-rose-500/50 bg-rose-500/15 text-white" : "border-white/8 bg-white/3 text-zinc-400 hover:border-white/15 hover:text-white"}`}>
-                          <p className="font-semibold text-sm">{b.label}</p>
-                          <p className="text-[10px] text-zinc-500 mt-0.5">{diff.multipliers.dozen}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  </motion.div>
                 )}
-              </CardContent>
-            </Card>
+              </AnimatePresence>
+            </div>
 
-            {/* Bet amount */}
-            <Card>
-              <CardHeader><CardTitle className="text-sm">Mise</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold">$</span>
-                  <input type="number" min="9" step="1" value={betAmount} onChange={e => setBetAmount(e.target.value)}
-                    disabled={phase === "spinning"}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-8 text-white font-bold text-lg focus:outline-none focus:border-rose-500/50 focus:bg-white/8 transition-all" />
-                </div>
-                <div className="flex gap-2">
-                  {[9, 25, 50, 100].map(v => (
-                    <button key={v} onClick={() => setBetAmount(String(Math.min(v, Number(balance))))}
-                      className="flex-1 py-1.5 rounded-lg bg-white/5 border border-white/8 text-xs text-zinc-400 hover:text-white hover:bg-white/10 transition-all font-semibold">
-                      ${v}
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {error && <p className="text-rose-400 text-sm text-center font-medium">{error}</p>}
-
-            <Button className="w-full h-12 text-base font-bold bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700"
-              onClick={spin} disabled={phase === "spinning"} isLoading={phase === "spinning"}>
-              <CircleDot className="w-4 h-4 mr-2" /> Lancer la roulette
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
-            <Button className="w-full h-12 text-base font-bold" onClick={reset}>
-              <RefreshCw className="w-4 h-4 mr-2" /> Rejouer
-            </Button>
-            <Link href="/games"><Button variant="ghost" className="w-full">Retour aux jeux</Button></Link>
-          </motion.div>
+            {/* Difficulty */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {["easy","medium","hard"].map((d, i) => (
+                <button key={d} onClick={() => setDifficulty(d)}
+                  className={`py-2.5 rounded-xl border text-center font-bold text-xs transition-all ${
+                    difficulty === d ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                                    : "bg-white/4 border-white/10 text-zinc-400 hover:border-white/20 hover:text-white"
+                  }`}>
+                  {["Facile","Moyen","Difficile"][i]}
+                </button>
+              ))}
+            </div>
+          </>
         )}
+
+        {error && <p className="text-rose-400 text-sm text-center font-medium mb-3">{error}</p>}
+
+        {/* Bet + Pari */}
+        <div className="flex items-stretch gap-3">
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+            <div className="flex items-center px-3 py-3 gap-2">
+              <span className="text-zinc-400 font-bold text-sm">$</span>
+              <input type="number" min="9" step="1" value={betAmount}
+                onChange={e => { setBetAmount(Number(e.target.value)); reset(); }}
+                disabled={phase === "spinning"}
+                className="flex-1 bg-transparent text-white font-bold text-base focus:outline-none w-0" />
+            </div>
+            <div className="flex border-t border-white/6">
+              <button onClick={() => { setBetAmount(a => Math.max(9, Math.floor(a / 2))); reset(); }}
+                disabled={phase === "spinning"}
+                className="flex-1 py-1.5 text-xs font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all border-r border-white/6">/2</button>
+              <button onClick={() => { setBetAmount(a => Math.min(balance, a * 2)); reset(); }}
+                disabled={phase === "spinning"}
+                className="flex-1 py-1.5 text-xs font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all">x2</button>
+            </div>
+          </div>
+          <button onClick={phase === "idle" ? spin : phase === "spinning" ? undefined : reset}
+            disabled={phase === "spinning"}
+            className={`px-8 rounded-xl font-black text-base transition-all ${
+              phase === "spinning" ? "bg-blue-600/50 text-blue-300 cursor-not-allowed"
+                                   : "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/30"
+            }`}>
+            {phase === "spinning"
+              ? <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+              : phase === "result" ? "Rejouer" : "Pari 🎡"
+            }
+          </button>
+        </div>
+
+        <div className="mt-4 text-center">
+          <Link href="/games"><span className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors">← Retour aux jeux</span></Link>
+        </div>
       </div>
     </AppLayout>
   );
