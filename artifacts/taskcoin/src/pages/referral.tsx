@@ -256,6 +256,7 @@ export default function Referral() {
                 <p className="text-sm text-zinc-500 mt-1">{t("referral", "tierProgress")}</p>
               </CardHeader>
               <CardContent>
+                <div className="max-h-[420px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                   {bonuses.map((bonus) => {
                     const pct = Math.round((bonus.progress / bonus.total) * 100);
@@ -311,6 +312,7 @@ export default function Referral() {
                       </div>
                     );
                   })}
+                </div>
                 </div>
               </CardContent>
             </Card>
