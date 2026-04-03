@@ -11,7 +11,7 @@
   "private": true,
   "packageManager": "pnpm@10.26.1",
   "engines": {
-    "node": "20"
+    "node": ">=20"
   },
   "devDependencies": {
     "typescript": "~5.9.2",
