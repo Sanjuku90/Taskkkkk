@@ -57,8 +57,7 @@ function useReferralBonuses() {
     queryFn: async () => {
       const res = await fetch("/api/bonuses/catalog");
       if (!res.ok) throw new Error("Failed to fetch bonuses");
-      const all: CatalogBonus[] = await res.json();
-      return all.filter(b => b.type === "referral");
+      return res.json();
     },
   });
 }
