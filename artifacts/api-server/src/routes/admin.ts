@@ -148,6 +148,36 @@ router.post("/users/:userId/bonus", async (req, res) => {
   res.json({ message: `Bonus of $${parsed.data.amount} added` });
 });
 
+router.post("/users/:userId/deduct", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const { amount } = req.body;
+  const parsed = Number(amount);
+  if (!amount || isNaN(parsed) || parsed <= 0) {
+    res.status(400).json({ error: "Montant invalide" });
+    return;
+  }
+
+  const userId = parseInt(req.params.userId);
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Utilisateur invalide" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  const newBalance = Number(user.balance) - parsed;
+  await db.update(usersTable).set({
+    balance: sql`${usersTable.balance} - ${parsed}`,
+  }).where(eq(usersTable.id, userId));
+
+  res.json({ message: `$${parsed} déduit du solde`, newBalance });
+});
+
 router.get("/transactions", async (req, res) => {
   if (!await requireAdmin(req, res)) return;
 

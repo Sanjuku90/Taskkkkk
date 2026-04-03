@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, Ban, CheckCircle, Gift } from "lucide-react";
+import { Search, Ban, CheckCircle, Gift, MinusCircle } from "lucide-react";
 
 export default function AdminUsers() {
   useRequireAuth(true);
@@ -17,6 +17,10 @@ export default function AdminUsers() {
   
   const [bonusModalUser, setBonusModalUser] = useState<{id: number, username: string} | null>(null);
   const [bonusAmount, setBonusAmount] = useState("");
+
+  const [deductModalUser, setDeductModalUser] = useState<{id: number, username: string} | null>(null);
+  const [deductAmount, setDeductAmount] = useState("");
+  const [deductLoading, setDeductLoading] = useState(false);
 
   const suspendMutation = useSuspendUser({
     mutation: {
@@ -46,6 +50,32 @@ export default function AdminUsers() {
     e.preventDefault();
     if (!bonusModalUser) return;
     bonusMutation.mutate({ userId: bonusModalUser.id, data: { amount: Number(bonusAmount), note: "Admin Bonus" } });
+  };
+
+  const handleDeduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deductModalUser) return;
+    const amount = Number(deductAmount);
+    if (!amount || amount <= 0) return;
+    setDeductLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${deductModalUser.id}/deduct`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      queryClient.invalidateQueries({ queryKey: getGetAdminUsersQueryKey() });
+      toast({ title: "Solde déduit", description: `$${amount} retiré du solde de ${deductModalUser.username}.` });
+      setDeductModalUser(null);
+      setDeductAmount("");
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setDeductLoading(false);
+    }
   };
 
   const filteredUsers = users?.filter(u => 
@@ -119,11 +149,14 @@ export default function AdminUsers() {
                     <Button size="sm" variant="outline" onClick={() => setBonusModalUser({id: user.id, username: user.username})}>
                       <Gift className="w-4 h-4 mr-1" /> Bonus
                     </Button>
+                    <Button size="sm" variant="outline" className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => setDeductModalUser({id: user.id, username: user.username})}>
+                      <MinusCircle className="w-4 h-4 mr-1" /> Déduire
+                    </Button>
                     <Button 
                       size="sm" 
                       variant={user.isSuspended ? "default" : "destructive"}
                       onClick={() => handleToggleSuspend(user.id, user.isSuspended)}
-                      disabled={user.isAdmin} // Prevent suspending other admins easily
+                      disabled={user.isAdmin}
                     >
                       {user.isSuspended ? "Reactivate" : "Suspend"}
                     </Button>
@@ -142,6 +175,19 @@ export default function AdminUsers() {
             <Input type="number" step="0.01" required value={bonusAmount} onChange={e => setBonusAmount(e.target.value)} placeholder="0.00" />
           </div>
           <Button type="submit" className="w-full mt-4" isLoading={bonusMutation.isPending}>Add Funds</Button>
+        </form>
+      </Modal>
+
+      <Modal isOpen={!!deductModalUser} onClose={() => { setDeductModalUser(null); setDeductAmount(""); }} title={`Déduire du solde — ${deductModalUser?.username}`}>
+        <form onSubmit={handleDeduct} className="space-y-4">
+          <p className="text-sm text-zinc-400">Le montant sera retiré directement du solde sans créer d'historique de transaction.</p>
+          <div className="space-y-2">
+            <Label>Montant à déduire ($)</Label>
+            <Input type="number" step="0.01" min="0.01" required value={deductAmount} onChange={e => setDeductAmount(e.target.value)} placeholder="0.00" />
+          </div>
+          <Button type="submit" className="w-full mt-4 bg-rose-600 hover:bg-rose-500 text-white" isLoading={deductLoading}>
+            <MinusCircle className="w-4 h-4 mr-2" /> Déduire
+          </Button>
         </form>
       </Modal>
     </AppLayout>
