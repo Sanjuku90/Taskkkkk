@@ -6,6 +6,7 @@ import tasksRouter from "./tasks";
 import transactionsRouter from "./transactions";
 import adminRouter from "./admin";
 import bonusesRouter from "./bonuses";
+import gamesRouter from "./games";
 
 const router: IRouter = Router();
 
@@ -17,5 +18,6 @@ router.use("/tasks", tasksRouter);
 router.use("/transactions", transactionsRouter);
 router.use("/admin", adminRouter);
 router.use("/bonuses", bonusesRouter);
+router.use("/games", gamesRouter);
 
 export default router;

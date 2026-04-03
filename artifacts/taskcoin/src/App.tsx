@@ -19,6 +19,10 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminBonusTasks from "@/pages/admin/bonus-tasks";
 import AdminBonusCatalog from "@/pages/admin/bonus-catalog";
 import Referral from "@/pages/referral";
+import GamesHub from "@/pages/games/index";
+import CoinFlip from "@/pages/games/coinflip";
+import Mines from "@/pages/games/mines";
+import CrashGame from "@/pages/games/crash";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +44,10 @@ function Router() {
       <Route path="/tasks" component={Tasks} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/referral" component={Referral} />
+      <Route path="/games" component={GamesHub} />
+      <Route path="/games/coinflip" component={CoinFlip} />
+      <Route path="/games/mines" component={Mines} />
+      <Route path="/games/crash" component={CrashGame} />
       
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/users" component={AdminUsers} />

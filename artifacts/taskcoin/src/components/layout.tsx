@@ -6,7 +6,7 @@ import { Button } from "./ui-core";
 import {
   LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings,
   Users, Activity, Menu, X, Star, BookOpen, UserPlus, ChevronRight,
-  Shield, Globe
+  Shield, Globe, Gamepad2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -126,6 +126,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     { icon: CheckSquare, label: t("nav", "tasks"), href: "/tasks" },
     { icon: Wallet, label: t("nav", "transactions"), href: "/transactions" },
     { icon: UserPlus, label: t("nav", "referral"), href: "/referral" },
+    { icon: Gamepad2, label: lang === "fr" ? "Jeux" : "Games", href: "/games" },
   ];
 
   const bottomNavLabels: Record<string, string> = {
@@ -134,6 +135,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     "/tasks": lang === "fr" ? "Tâches" : "Tasks",
     "/transactions": lang === "fr" ? "Wallet" : "Wallet",
     "/referral": lang === "fr" ? "Parrainage" : "Referral",
+    "/games": lang === "fr" ? "Jeux" : "Games",
   };
 
   const adminLinks: NavLink[] = [
@@ -343,12 +345,12 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
             paddingBottom: "env(safe-area-inset-bottom, 0px)"
           }}
         >
-          <div className="flex items-stretch h-16">
+          <div className="flex items-stretch h-16 overflow-x-auto no-scrollbar">
             {userLinks.map(({ icon: Icon, href }) => {
               const active = location === href;
               const shortLabel = bottomNavLabels[href] ?? href;
               return (
-                <Link key={href} href={href} className="flex-1">
+                <Link key={href} href={href} className="flex-1 min-w-[52px]">
                   <div className={cn(
                     "relative flex flex-col items-center justify-center h-full gap-1 transition-colors active:scale-95",
                     active ? "text-amber-400" : "text-slate-600 hover:text-slate-400"

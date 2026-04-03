@@ -4,3 +4,4 @@ export * from "./tasks";
 export * from "./transactions";
 export * from "./settings";
 export * from "./bonuses";
+export * from "./games";
