@@ -9,9 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
 const DIFFICULTIES = [
-  { value: "easy", label: "Facile", desc: "Crash lent (~5×)", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
-  { value: "medium", label: "Moyen", desc: "Standard (~2.5×)", color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
-  { value: "hard", label: "Difficile", desc: "Rapide (~1.5×)", color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
+  { value: "easy", label: "Facile", desc: "Crash moyen ~2×", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
+  { value: "medium", label: "Moyen", desc: "Crash rapide ~1.4×", color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
+  { value: "hard", label: "Difficile", desc: "Crash brutal ~1.15×", color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
 ];
 
 type GamePhase = "setup" | "playing" | "won" | "lost";

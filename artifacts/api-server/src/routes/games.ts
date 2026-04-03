@@ -24,10 +24,10 @@ function generateMines(total: number, count: number): number[] {
 }
 
 function getMinesCount(difficulty: string): number {
-  if (difficulty === "easy") return 3;
-  if (difficulty === "medium") return 7;
-  if (difficulty === "hard") return 15;
-  return 5;
+  if (difficulty === "easy") return 5;
+  if (difficulty === "medium") return 10;
+  if (difficulty === "hard") return 18;
+  return 7;
 }
 
 function getMinesMultiplier(mines: number, revealed: number): number {
@@ -35,13 +35,18 @@ function getMinesMultiplier(mines: number, revealed: number): number {
   for (let i = 0; i < revealed; i++) {
     multiplier *= (TOTAL_CELLS - i) / (TOTAL_CELLS - mines - i);
   }
-  return Math.round(multiplier * 0.97 * 100) / 100;
+  // 20% house edge — gains difficiles à atteindre
+  return Math.round(multiplier * 0.80 * 100) / 100;
 }
 
 function generateCrashPoint(difficulty: string): number {
   const r = Math.random();
-  const mean = difficulty === "easy" ? 5 : difficulty === "hard" ? 1.5 : 2.5;
-  const crashPoint = Math.max(1.01, -mean * Math.log(r));
+  // 25% chance d'un crash immédiat (1.01×) pour tous les niveaux
+  if (r < 0.25) return 1.01;
+  const r2 = Math.random();
+  // Moyennes très basses : easy ~2×, medium ~1.4×, hard ~1.15×
+  const mean = difficulty === "easy" ? 2.0 : difficulty === "hard" ? 1.15 : 1.4;
+  const crashPoint = Math.max(1.01, -mean * Math.log(r2));
   return Math.round(crashPoint * 100) / 100;
 }
 
@@ -81,7 +86,8 @@ router.post("/coinflip", async (req, res) => {
     return;
   }
 
-  const multipliers: Record<string, number> = { easy: 1.8, medium: 1.92, hard: 1.98 };
+  // Multiplicateurs réduits — marge maison élevée
+  const multipliers: Record<string, number> = { easy: 1.4, medium: 1.6, hard: 1.85 };
   const multiplier = multipliers[difficulty];
 
   const result = Math.random() < 0.5 ? "pile" : "face";

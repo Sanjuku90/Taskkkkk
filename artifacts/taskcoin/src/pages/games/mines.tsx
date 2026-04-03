@@ -9,9 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
 const DIFFICULTIES = [
-  { value: "easy", label: "Facile", mines: 3, color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
-  { value: "medium", label: "Moyen", mines: 7, color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
-  { value: "hard", label: "Difficile", mines: 15, color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
+  { value: "easy", label: "Facile", mines: 5, color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
+  { value: "medium", label: "Moyen", mines: 10, color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
+  { value: "hard", label: "Difficile", mines: 18, color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
 ];
 
 type CellState = "hidden" | "safe" | "mine" | "revealed-mine";

@@ -9,9 +9,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey } from "@workspace/api-client-react";
 
 const DIFFICULTIES = [
-  { value: "easy", label: "Facile", multiplier: "1.8×", desc: "55% maison", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
-  { value: "medium", label: "Moyen", multiplier: "1.92×", desc: "52% maison", color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
-  { value: "hard", label: "Difficile", multiplier: "1.98×", desc: "51% maison", color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
+  { value: "easy", label: "Facile", multiplier: "1.4×", desc: "Marge élevée", color: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" },
+  { value: "medium", label: "Moyen", multiplier: "1.6×", desc: "Marge forte", color: "border-amber-500/40 bg-amber-500/10 text-amber-400" },
+  { value: "hard", label: "Difficile", multiplier: "1.85×", desc: "Risque max", color: "border-rose-500/40 bg-rose-500/10 text-rose-400" },
 ];
 
 type GameState = "idle" | "flipping" | "result";
