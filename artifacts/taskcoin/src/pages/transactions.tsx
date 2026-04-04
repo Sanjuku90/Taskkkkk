@@ -51,7 +51,7 @@ export default function Transactions() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
-        toast({ title: "Demande envoyée", description: "Votre transaction est en attente de validation." });
+        toast({ title: "Demande envoyée", description: "Votre transaction est en attente de validation. Délai de traitement : jusqu'à 72 heures." });
         setIsDepositOpen(false);
         setIsWithdrawOpen(false);
         setDepAmount(""); setDepHash("");
