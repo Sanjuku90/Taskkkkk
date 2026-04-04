@@ -11,14 +11,67 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
 });
 
-function useMemberCounter(start = 1251, intervalMs = 5000) {
-  const [count, setCount] = useState(start);
+// Incrément déterministe pour l'intervalle i : retourne 2, 3 ou 4
+// Même graine → même séquence, peu importe le nombre de rechargements
+function seededIncrement(i: number): number {
+  const x = Math.sin(i * 127.1 + 311.7) * 43758.5453;
+  return 2 + (Math.abs(Math.floor(x * 1000)) % 3);
+}
+
+const MEMBER_STORAGE_KEY = "tc_member_epoch";
+const MEMBER_START = 1251;
+const MEMBER_INTERVAL_MS = 5000;
+// Plafond pour éviter une boucle trop longue si le site est inactif plusieurs jours
+const MAX_INTERVALS = 50_000; // ≈ 69 h
+
+function getOrCreateEpoch(): number {
+  try {
+    const stored = localStorage.getItem(MEMBER_STORAGE_KEY);
+    if (stored) return parseInt(stored, 10);
+    const now = Date.now();
+    localStorage.setItem(MEMBER_STORAGE_KEY, String(now));
+    return now;
+  } catch {
+    return Date.now();
+  }
+}
+
+function computeCount(epoch: number, now: number): number {
+  const n = Math.min(
+    Math.floor((now - epoch) / MEMBER_INTERVAL_MS),
+    MAX_INTERVALS
+  );
+  let total = MEMBER_START;
+  for (let i = 0; i < n; i++) total += seededIncrement(i);
+  return total;
+}
+
+function useMemberCounter() {
+  const [count, setCount] = useState<number>(() => {
+    const epoch = getOrCreateEpoch();
+    return computeCount(epoch, Date.now());
+  });
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCount((prev) => prev + Math.floor(Math.random() * 3) + 2);
-    }, intervalMs);
-    return () => clearInterval(timer);
-  }, [intervalMs]);
+    const epoch = getOrCreateEpoch();
+    const tick = () => setCount(computeCount(epoch, Date.now()));
+
+    // Attendre le prochain tick naturel aligné sur l'epoch, puis boucler régulièrement
+    const elapsed = (Date.now() - epoch) % MEMBER_INTERVAL_MS;
+    const delay = MEMBER_INTERVAL_MS - elapsed;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const timeoutId = setTimeout(() => {
+      tick();
+      intervalId = setInterval(tick, MEMBER_INTERVAL_MS);
+    }, delay);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId !== null) clearInterval(intervalId);
+    };
+  }, []);
+
   return count.toLocaleString("fr-FR");
 }
 
@@ -88,7 +141,7 @@ const plans = [
 ];
 
 export default function Home() {
-  const memberCount = useMemberCounter(1251, 5000);
+  const memberCount = useMemberCounter();
   return (
     <PublicLayout>
       <div className="flex-1 flex flex-col">
