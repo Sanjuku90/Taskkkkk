@@ -3,7 +3,7 @@ import { useRequireAuth } from "@/hooks/use-auth-wrapper";
 import { useGetMyTransactions, useCreateTransaction, getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, Button, Badge, Input, Label, Modal } from "@/components/ui-core";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp } from "lucide-react";
@@ -47,11 +47,16 @@ export default function Transactions() {
   const [withAddress, setWithAddress] = useState("");
   const [withDisclaimer, setWithDisclaimer] = useState(false);
 
+  const lastTxType = useRef<TxType>("deposit");
+
   const createTxMutation = useCreateTransaction({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
-        toast({ title: "Demande envoyée", description: "Votre transaction est en attente de validation. Délai de traitement : jusqu'à 72 heures." });
+        const desc = lastTxType.current === "deposit"
+          ? "Votre dépôt est en attente de validation. Délai de traitement : 10 à 20 minutes."
+          : "Votre retrait est en attente de validation. Délai de traitement : jusqu'à 72 heures.";
+        toast({ title: "Demande envoyée", description: desc });
         setIsDepositOpen(false);
         setIsWithdrawOpen(false);
         setDepAmount(""); setDepHash("");
@@ -65,11 +70,13 @@ export default function Transactions() {
 
   const handleDeposit = (e: React.FormEvent) => {
     e.preventDefault();
+    lastTxType.current = "deposit";
     createTxMutation.mutate({ data: { type: "deposit", amount: Number(depAmount), currency: depCurrency, txHash: depHash } });
   };
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
+    lastTxType.current = "withdrawal";
     createTxMutation.mutate({ data: { type: "withdrawal", amount: Number(withAmount), currency: withCurrency, walletAddress: withAddress } });
   };
 
