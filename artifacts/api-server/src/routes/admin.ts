@@ -311,6 +311,8 @@ router.get("/settings", async (req, res) => {
     withdrawalsBlocked: (await getSetting("withdrawals_blocked", "false")) === "true",
     depositAddress: await getSetting("deposit_address", "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS"),
     referralCommissionRate: Number(await getSetting("referral_commission_rate", "30")),
+    announcementEnabled: (await getSetting("announcement_enabled", "false")) === "true",
+    announcement: await getSetting("announcement", ""),
   });
 });
 
@@ -331,6 +333,13 @@ router.post("/settings", async (req, res) => {
   await setSetting("withdrawals_blocked", String(withdrawalsBlocked));
   await setSetting("deposit_address", depositAddress);
   await setSetting("referral_commission_rate", String(referralCommissionRate));
+
+  if (typeof req.body.announcementEnabled === "boolean") {
+    await setSetting("announcement_enabled", String(req.body.announcementEnabled));
+  }
+  if (typeof req.body.announcement === "string") {
+    await setSetting("announcement", req.body.announcement);
+  }
 
   res.json({ message: "Settings updated" });
 });

@@ -7,6 +7,7 @@ import transactionsRouter from "./transactions";
 import adminRouter from "./admin";
 import bonusesRouter from "./bonuses";
 import gamesRouter from "./games";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
@@ -19,5 +20,6 @@ router.use("/transactions", transactionsRouter);
 router.use("/admin", adminRouter);
 router.use("/bonuses", bonusesRouter);
 router.use("/games", gamesRouter);
+router.use("/settings", settingsRouter);
 
 export default router;

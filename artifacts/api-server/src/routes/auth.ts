@@ -181,4 +181,67 @@ router.get("/me", async (req, res) => {
   });
 });
 
+router.patch("/profile", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const { username, currentPassword, newPassword } = req.body;
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
+  if (!user) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  const updates: Record<string, unknown> = {};
+
+  if (username && typeof username === "string") {
+    const trimmed = username.trim();
+    if (trimmed.length < 3 || trimmed.length > 32) {
+      res.status(400).json({ error: "Username must be 3-32 characters" });
+      return;
+    }
+    updates.username = trimmed;
+  }
+
+  if (newPassword) {
+    if (!currentPassword) {
+      res.status(400).json({ error: "Current password is required" });
+      return;
+    }
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+      res.status(400).json({ error: "Incorrect current password" });
+      return;
+    }
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
+      res.status(400).json({ error: "New password must be at least 6 characters" });
+      return;
+    }
+    updates.passwordHash = await bcrypt.hash(newPassword, 12);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  const [updated] = await db.update(usersTable).set(updates as any).where(eq(usersTable.id, user.id)).returning();
+
+  res.json({
+    id: updated.id,
+    email: updated.email,
+    username: updated.username,
+    balance: Number(updated.balance),
+    isAdmin: updated.isAdmin,
+    isSuspended: updated.isSuspended,
+    activePlanId: updated.activePlanId,
+    planActivatedAt: updated.planActivatedAt?.toISOString() ?? null,
+    referralCode: updated.referralCode,
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
 export default router;

@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Users, Copy, Check, Gift, TrendingUp, UserCheck, Link2,
-  ChevronRight, Star, Crown, Zap, CircleDashed
+  ChevronRight, Star, Crown, Zap, CircleDashed, QrCode
 } from "lucide-react";
 
 interface ReferredUser {
@@ -168,6 +169,25 @@ export default function Referral() {
               </CardHeader>
               <CardContent className="space-y-5">
                 <p className="text-sm text-zinc-400 leading-relaxed">{t("referral", "linkDescription")}</p>
+
+                {/* QR Code */}
+                {referralLink && (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="p-4 bg-white rounded-2xl shadow-lg shadow-violet-500/10 border border-violet-500/20">
+                      <QRCodeSVG
+                        value={referralLink}
+                        size={160}
+                        bgColor="#ffffff"
+                        fgColor="#0f0f1a"
+                        level="M"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-500">
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Scanner pour s'inscrire avec votre code</span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Referral URL */}
                 <div className="space-y-2">

@@ -12,6 +12,8 @@ type SiteSettings = {
   withdrawalsBlocked: boolean;
   depositAddress: string;
   referralCommissionRate: number;
+  announcementEnabled: boolean;
+  announcement: string;
 };
 
 export default function AdminSettings() {
@@ -27,6 +29,8 @@ export default function AdminSettings() {
     withdrawalsBlocked: false,
     depositAddress: "",
     referralCommissionRate: 30,
+    announcementEnabled: false,
+    announcement: "",
   });
 
   useEffect(() => {
@@ -139,6 +143,36 @@ export default function AdminSettings() {
                   onChange={e => setFormState({...formState, withdrawalsBlocked: e.target.checked})}
                 />
               </label>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-semibold text-white">Annonce utilisateurs</h3>
+              </div>
+              <p className="text-xs text-zinc-500 -mt-1">Affiche un bandeau d'annonce à tous les utilisateurs connectés.</p>
+
+              <label className="flex items-center justify-between p-4 rounded-xl border border-white/5 bg-black/20 cursor-pointer hover:bg-white/5 transition-colors">
+                <div>
+                  <div className="font-medium text-white mb-1">Activer l'annonce</div>
+                  <div className="text-sm text-zinc-500">Le bandeau sera visible par tous les utilisateurs.</div>
+                </div>
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 accent-primary rounded bg-zinc-900 border-white/10"
+                  checked={formState.announcementEnabled}
+                  onChange={e => setFormState({ ...formState, announcementEnabled: e.target.checked })}
+                />
+              </label>
+
+              <div className="space-y-2">
+                <Label>Texte de l'annonce</Label>
+                <textarea
+                  className="w-full min-h-[80px] bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 resize-y focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition"
+                  value={formState.announcement}
+                  onChange={e => setFormState({ ...formState, announcement: e.target.value })}
+                  placeholder="Entrez votre message d'annonce ici..."
+                />
+              </div>
             </div>
 
             <Button type="submit" className="w-full mt-6" isLoading={updateMutation.isPending}>

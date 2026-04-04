@@ -1,17 +1,29 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth-wrapper";
 import { useLogout, getGetMeQueryKey } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "./ui-core";
 import {
   LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings,
   Users, Activity, Menu, X, Star, BookOpen, UserPlus, ChevronRight,
-  Shield, Globe, Gamepad2
+  Shield, Globe, Gamepad2, User, Megaphone, XCircle
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useI18n, type Lang } from "@/lib/i18n";
+
+function useAnnouncement() {
+  return useQuery<{ announcementEnabled: boolean; announcement: string }>({
+    queryKey: ["public-settings"],
+    queryFn: async () => {
+      const res = await fetch("/api/settings");
+      if (!res.ok) return { announcementEnabled: false, announcement: "" };
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+}
 
 interface NavLink { icon: React.ElementType; label: string; href: string; }
 
@@ -118,7 +130,13 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     },
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [announcementDismissed, setAnnouncementDismissed] = useState(false);
   const { lang } = useI18n();
+  const { data: announcementData } = useAnnouncement();
+
+  const showAnnouncement = !adminMode && !announcementDismissed
+    && announcementData?.announcementEnabled
+    && !!announcementData?.announcement;
 
   const userLinks: NavLink[] = [
     { icon: LayoutDashboard, label: t("nav", "dashboard"), href: "/dashboard" },
@@ -197,14 +215,27 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
           <LangSwitcher />
         </div>
 
-        {/* User card */}
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/4 border border-white/8">
-          <UserAvatar username={user?.username} />
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-white text-sm truncate leading-tight">{user?.username}</p>
-            <p className="text-[11px] text-slate-600 truncate">{user?.email}</p>
+        {/* User card → links to profile (user mode only) */}
+        {!adminMode ? (
+          <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/4 border border-white/8 hover:bg-white/8 hover:border-amber-500/20 transition-all cursor-pointer group">
+              <UserAvatar username={user?.username} />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold text-white text-sm truncate leading-tight group-hover:text-amber-400 transition-colors">{user?.username}</p>
+                <p className="text-[11px] text-slate-600 truncate">{user?.email}</p>
+              </div>
+              <User className="w-3.5 h-3.5 text-zinc-600 group-hover:text-amber-400 transition-colors shrink-0" />
+            </div>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/4 border border-white/8">
+            <UserAvatar username={user?.username} />
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-white text-sm truncate leading-tight">{user?.username}</p>
+              <p className="text-[11px] text-slate-600 truncate">{user?.email}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {isAdmin && !adminMode && (
           <Link href="/admin">
@@ -318,6 +349,36 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 flex flex-col min-h-screen pt-14 md:pt-0">
+        {/* Announcement Banner */}
+        <AnimatePresence>
+          {showAnnouncement && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+              className="relative mx-4 mt-4 md:mx-8 md:mt-6 rounded-xl overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, hsl(38, 92%, 50%, 0.15) 0%, hsl(45, 100%, 60%, 0.08) 100%)",
+                border: "1px solid hsl(38, 92%, 50%, 0.3)",
+              }}
+            >
+              <div className="flex items-start gap-3 p-4 pr-12">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <Megaphone className="w-4 h-4 text-amber-400" />
+                </div>
+                <p className="text-sm text-amber-100 leading-relaxed flex-1">{announcementData?.announcement}</p>
+              </div>
+              <button
+                onClick={() => setAnnouncementDismissed(true)}
+                className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg text-amber-400/60 hover:text-amber-400 hover:bg-amber-500/10 transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex-1 p-4 md:p-8 pb-28 md:pb-8 max-w-7xl mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
