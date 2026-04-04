@@ -19,7 +19,7 @@ function seededIncrement(i: number): number {
 }
 
 const MEMBER_START = 3101;
-const MEMBER_INTERVAL_MS = 5000;
+const MEMBER_INTERVAL_MS = 10000;
 // Epoch fixe partagé par tous les utilisateurs — 2026-04-04T23:35:00Z
 const MEMBER_EPOCH = 1743809700000;
 // Plafond pour éviter une boucle trop longue si le site est inactif plusieurs jours
