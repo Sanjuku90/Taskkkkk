@@ -18,27 +18,16 @@ function seededIncrement(i: number): number {
   return 2 + (Math.abs(Math.floor(x * 1000)) % 3);
 }
 
-const MEMBER_STORAGE_KEY = "tc_member_epoch";
-const MEMBER_START = 1251;
+const MEMBER_START = 3101;
 const MEMBER_INTERVAL_MS = 5000;
+// Epoch fixe partagé par tous les utilisateurs — 2026-04-04T23:35:00Z
+const MEMBER_EPOCH = 1743809700000;
 // Plafond pour éviter une boucle trop longue si le site est inactif plusieurs jours
 const MAX_INTERVALS = 50_000; // ≈ 69 h
 
-function getOrCreateEpoch(): number {
-  try {
-    const stored = localStorage.getItem(MEMBER_STORAGE_KEY);
-    if (stored) return parseInt(stored, 10);
-    const now = Date.now();
-    localStorage.setItem(MEMBER_STORAGE_KEY, String(now));
-    return now;
-  } catch {
-    return Date.now();
-  }
-}
-
-function computeCount(epoch: number, now: number): number {
+function computeCount(now: number): number {
   const n = Math.min(
-    Math.floor((now - epoch) / MEMBER_INTERVAL_MS),
+    Math.max(0, Math.floor((now - MEMBER_EPOCH) / MEMBER_INTERVAL_MS)),
     MAX_INTERVALS
   );
   let total = MEMBER_START;
@@ -47,17 +36,13 @@ function computeCount(epoch: number, now: number): number {
 }
 
 function useMemberCounter() {
-  const [count, setCount] = useState<number>(() => {
-    const epoch = getOrCreateEpoch();
-    return computeCount(epoch, Date.now());
-  });
+  const [count, setCount] = useState<number>(() => computeCount(Date.now()));
 
   useEffect(() => {
-    const epoch = getOrCreateEpoch();
-    const tick = () => setCount(computeCount(epoch, Date.now()));
+    const tick = () => setCount(computeCount(Date.now()));
 
     // Attendre le prochain tick naturel aligné sur l'epoch, puis boucler régulièrement
-    const elapsed = (Date.now() - epoch) % MEMBER_INTERVAL_MS;
+    const elapsed = (Date.now() - MEMBER_EPOCH) % MEMBER_INTERVAL_MS;
     const delay = MEMBER_INTERVAL_MS - elapsed;
 
     let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -79,7 +64,7 @@ const stats = [
   { value: null, label: "Membres actifs", color: "text-amber-400", live: true },
   { value: "$2.8M", label: "Distribués en gains", color: "text-cyan-400" },
   { value: "99.9%", label: "Disponibilité", color: "text-emerald-400" },
-  { value: "< 48h", label: "Traitement retraits", color: "text-violet-400" },
+  { value: "< 72h", label: "Traitement retraits", color: "text-violet-400" },
 ];
 
 const features = [
@@ -204,7 +189,7 @@ export default function Home() {
 
                 {/* Trust indicators */}
                 <motion.div {...fadeUp(0.26)} className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 text-sm text-slate-600">
-                  {["Gratuit à l'inscription", "Retrait en 48h", "Support 7j/7"].map((item, i) => (
+                  {["Gratuit à l'inscription", "Retrait en 72h", "Support 7j/7"].map((item, i) => (
                     <span key={i} className="flex items-center gap-1.5 shrink-0">
                       <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       {item}
@@ -470,7 +455,7 @@ export default function Home() {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-6 text-xs text-slate-700">Pas de frais à l'inscription · Retrait disponible sous 48h</p>
+              <p className="mt-6 text-xs text-slate-700">Pas de frais à l'inscription · Retrait disponible sous 72h</p>
             </motion.div>
           </div>
         </section>

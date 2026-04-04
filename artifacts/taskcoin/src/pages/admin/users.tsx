@@ -146,7 +146,7 @@ export default function AdminUsers() {
                     ) : (
                       <div className="space-y-1">
                         <span className="text-zinc-600 text-xs italic">Sans plan actif</span>
-                        <div className="text-[10px] text-zinc-700">Retrait standard (48h)</div>
+                        <div className="text-[10px] text-zinc-700">Retrait standard (72h)</div>
                       </div>
                     )}
                   </td>
