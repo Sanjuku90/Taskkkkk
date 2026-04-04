@@ -695,6 +695,12 @@ components:
         note:
           type: string
           nullable: true
+        planName:
+          type: string
+          nullable: true
+        activePlanId:
+          type: integer
+          nullable: true
         createdAt:
           type: string
         updatedAt:

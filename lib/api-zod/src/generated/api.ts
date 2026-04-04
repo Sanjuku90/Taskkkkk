@@ -261,6 +261,8 @@ export const GetAdminTransactionsResponseItem = zod.object({
   txHash: zod.string().nullish(),
   walletAddress: zod.string().nullish(),
   note: zod.string().nullish(),
+  planName: zod.string().nullish(),
+  activePlanId: zod.number().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

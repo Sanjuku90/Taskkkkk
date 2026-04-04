@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, Ban, CheckCircle, Gift, MinusCircle } from "lucide-react";
+import { Search, Ban, CheckCircle, Gift, MinusCircle, Crown } from "lucide-react";
 
 export default function AdminUsers() {
   useRequireAuth(true);
@@ -106,29 +106,49 @@ export default function AdminUsers() {
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-zinc-400 uppercase bg-black/20 border-b border-white/5">
               <tr>
-                <th className="px-6 py-4 font-medium">User</th>
-                <th className="px-6 py-4 font-medium">Plan</th>
-                <th className="px-6 py-4 font-medium">Balance</th>
-                <th className="px-6 py-4 font-medium">Stats (In/Out)</th>
-                <th className="px-6 py-4 font-medium">Status</th>
+                <th className="px-6 py-4 font-medium">Utilisateur</th>
+                <th className="px-6 py-4 font-medium">Statut Premium</th>
+                <th className="px-6 py-4 font-medium">Solde</th>
+                <th className="px-6 py-4 font-medium">Dépôts / Retraits</th>
+                <th className="px-6 py-4 font-medium">Compte</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {isLoading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-zinc-500">Loading...</td></tr>
-              ) : filteredUsers?.map((user) => (
-                <tr key={user.id} className="hover:bg-white/5 transition-colors">
+                <tr><td colSpan={6} className="px-6 py-8 text-center text-zinc-500">Chargement...</td></tr>
+              ) : filteredUsers?.map((user) => {
+                const isPremium = !!user.activePlanId;
+                return (
+                <tr key={user.id} className={`transition-colors ${isPremium ? "hover:bg-amber-500/5" : "hover:bg-white/5"}`}>
                   <td className="px-6 py-4">
-                    <div className="font-bold text-white">{user.username} {user.isAdmin && <Badge variant="outline" className="ml-2 text-[10px]">ADMIN</Badge>}</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-white">{user.username}</span>
+                      {user.isAdmin && <Badge variant="outline" className="text-[10px]">ADMIN</Badge>}
+                    </div>
                     <div className="text-xs text-zinc-500">{user.email}</div>
-                    <div className="text-[10px] text-zinc-600 mt-1">Joined: {formatDate(user.createdAt)}</div>
+                    <div className="text-[10px] text-zinc-600 mt-1">Inscrit : {formatDate(user.createdAt)}</div>
                     {(user as any).registrationIp && (
-                      <div className="text-[10px] text-zinc-700 mt-0.5 font-mono">IP: {(user as any).registrationIp}</div>
+                      <div className="text-[10px] text-zinc-700 mt-0.5 font-mono">IP : {(user as any).registrationIp}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-zinc-300">
-                    {user.planName || '-'}
+                  <td className="px-6 py-4">
+                    {isPremium ? (
+                      <div className="space-y-1.5">
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30">
+                          <Crown className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-amber-300 font-bold text-xs uppercase tracking-wide">{user.planName}</span>
+                        </div>
+                        <div className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> En règle — retrait prioritaire
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <span className="text-zinc-600 text-xs italic">Sans plan actif</span>
+                        <div className="text-[10px] text-zinc-700">Retrait standard (48h)</div>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 font-bold text-primary">
                     {formatCurrency(user.balance)}
@@ -140,9 +160,9 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-6 py-4">
                     {user.isSuspended ? (
-                      <Badge variant="destructive"><Ban className="w-3 h-3 mr-1" /> Suspended</Badge>
+                      <Badge variant="destructive"><Ban className="w-3 h-3 mr-1" /> Suspendu</Badge>
                     ) : (
-                      <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" /> Active</Badge>
+                      <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" /> Actif</Badge>
                     )}
                   </td>
                   <td className="px-6 py-4 text-right space-x-2">
@@ -158,11 +178,12 @@ export default function AdminUsers() {
                       onClick={() => handleToggleSuspend(user.id, user.isSuspended)}
                       disabled={user.isAdmin}
                     >
-                      {user.isSuspended ? "Reactivate" : "Suspend"}
+                      {user.isSuspended ? "Réactiver" : "Suspendre"}
                     </Button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

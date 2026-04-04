@@ -195,12 +195,15 @@ router.get("/transactions", async (req, res) => {
     updatedAt: transactionsTable.updatedAt,
     username: usersTable.username,
     email: usersTable.email,
+    activePlanId: usersTable.activePlanId,
+    planName: plansTable.name,
   })
   .from(transactionsTable)
   .leftJoin(usersTable, eq(transactionsTable.userId, usersTable.id))
+  .leftJoin(plansTable, eq(usersTable.activePlanId, plansTable.id))
   .orderBy(desc(transactionsTable.createdAt));
 
-  res.json(txs.map(tx => ({
+  const mapped = txs.map(tx => ({
     id: tx.id,
     userId: tx.userId,
     username: tx.username ?? "",
@@ -212,9 +215,28 @@ router.get("/transactions", async (req, res) => {
     txHash: tx.txHash,
     walletAddress: tx.walletAddress,
     note: tx.note ?? null,
+    planName: tx.planName ?? null,
+    activePlanId: tx.activePlanId ?? null,
     createdAt: tx.createdAt.toISOString(),
     updatedAt: tx.updatedAt.toISOString(),
-  })));
+  }));
+
+  // Premium users (active plan) pending withdrawals → top
+  const isPremiumPendingWithdrawal = (t: typeof mapped[0]) =>
+    t.status === "pending" && t.type === "withdrawal" && t.activePlanId !== null;
+  const isPremiumPendingDeposit = (t: typeof mapped[0]) =>
+    t.status === "pending" && t.type === "deposit" && t.activePlanId !== null;
+  const isOtherPending = (t: typeof mapped[0]) =>
+    t.status === "pending" && t.activePlanId === null;
+
+  const sorted = [
+    ...mapped.filter(isPremiumPendingWithdrawal),
+    ...mapped.filter(isPremiumPendingDeposit),
+    ...mapped.filter(isOtherPending),
+    ...mapped.filter(t => t.status !== "pending"),
+  ];
+
+  res.json(sorted);
 });
 
 router.post("/transactions/:txId/validate", async (req, res) => {

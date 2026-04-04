@@ -20,6 +20,8 @@ export interface AdminTransaction {
   txHash?: string | null;
   walletAddress?: string | null;
   note?: string | null;
+  planName?: string | null;
+  activePlanId?: number | null;
   createdAt: string;
   updatedAt: string;
 }
