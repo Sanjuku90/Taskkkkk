@@ -126,7 +126,7 @@ export default function AdminTransactions() {
                           Approve
                         </Button>
                         <Button size="sm" variant="outline" className="border-rose-500/30 text-rose-400 hover:bg-rose-500/10" onClick={() => openRejectModal(tx.id)}>
-                          Reject
+                          Remboursement
                         </Button>
                       </>
                     ) : (
@@ -143,8 +143,8 @@ export default function AdminTransactions() {
       <Modal
         isOpen={rejectModal.open}
         onClose={() => setRejectModal({ open: false, txId: null })}
-        title="Motif du refus"
-        description="Sélectionnez une ou plusieurs causes de refus. Elles seront visibles par l'utilisateur."
+        title="Motif du remboursement"
+        description="Sélectionnez une ou plusieurs causes. Elles seront visibles par l'utilisateur."
       >
         <div className="space-y-3">
           <Label className="text-zinc-300 text-sm">Causes de refus</Label>
@@ -199,7 +199,7 @@ export default function AdminTransactions() {
               isLoading={validateMutation.isPending}
               disabled={selectedReasons.length === 0}
             >
-              Confirmer le refus
+              Confirmer le remboursement
             </Button>
           </div>
         </div>

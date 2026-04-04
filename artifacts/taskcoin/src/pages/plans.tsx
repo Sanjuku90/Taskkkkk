@@ -1,11 +1,11 @@
 import { AppLayout } from "@/components/layout";
 import { useRequireAuth } from "@/hooks/use-auth-wrapper";
-import { useGetPlans, useActivatePlan, getGetMeQueryKey, getGetMyTasksQueryKey } from "@workspace/api-client-react";
-import { Card, CardContent, Button, Badge } from "@/components/ui-core";
+import { useGetPlans, useActivatePlan, useCreateTransaction, getGetMeQueryKey, getGetMyTasksQueryKey, getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
+import { Card, CardContent, Button, Badge, Modal, Label, Input } from "@/components/ui-core";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock } from "lucide-react";
+import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock, Copy, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -25,12 +25,16 @@ const TIER_COLORS = [
   "text-amber-400", "text-violet-400", "text-blue-400", "text-primary"
 ];
 
+const SUBSCRIPTION_ADDRESS = "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS";
+
 export default function Plans() {
   const { user } = useRequireAuth();
   const { data: plans, isLoading } = useGetPlans();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activatingId, setActivatingId] = useState<number | null>(null);
+  const [isSubscribeOpen, setIsSubscribeOpen] = useState(false);
+  const [subHash, setSubHash] = useState("");
 
   const currentPlan = plans?.find(p => p.id === user?.activePlanId);
   const currentPlanDeposit = currentPlan ? currentPlan.depositRequired : -1;
@@ -49,6 +53,30 @@ export default function Plans() {
       },
     },
   });
+
+  const subscriptionMutation = useCreateTransaction({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
+        toast({ title: "Abonnement soumis !", description: "Votre paiement de 15$ est en attente de validation. L'accès sera activé sous peu." });
+        setIsSubscribeOpen(false);
+        setSubHash("");
+      },
+      onError: (error: any) => {
+        toast({ title: "Erreur", description: error?.message || "Impossible de soumettre l'abonnement.", variant: "destructive" });
+      },
+    },
+  });
+
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    subscriptionMutation.mutate({ data: { type: "deposit", amount: 15, currency: "USDT", txHash: subHash } });
+  };
+
+  const copySubscriptionAddress = () => {
+    navigator.clipboard.writeText(SUBSCRIPTION_ADDRESS);
+    toast({ title: "Adresse copiée !", description: "Envoyez exactement 15 USDT (TRC20) à cette adresse." });
+  };
 
   const handleActivate = (planId: number) => {
     if (!user) return;
@@ -81,6 +109,63 @@ export default function Plans() {
           </p>
         </motion.div>
       </div>
+
+      {/* Retrait Rapide Subscription Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="mb-10"
+      >
+        <div className="relative rounded-3xl overflow-hidden border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+          {/* Glow */}
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent pointer-events-none" />
+          <div className="absolute top-4 right-4">
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400">⚡ PREMIUM</span>
+          </div>
+
+          {/* Icon */}
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
+            <Zap className="w-8 h-8 text-cyan-400" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-display font-bold text-white mb-1">Abonnement Retrait Rapide</h2>
+            <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+              Obtenez des retraits <span className="text-cyan-400 font-semibold">instantanés sans délai</span> — dépôt direct en USDT TRC20.
+              Remboursement immédiat en cas de non-satisfaction.
+            </p>
+            <div className="flex flex-wrap gap-3 text-xs text-zinc-400 mb-5">
+              {[
+                { icon: "⚡", text: "Retrait instantané" },
+                { icon: "🔒", text: "Sans délai d'attente" },
+                { icon: "↩️", text: "Remboursement garanti" },
+                { icon: "💎", text: "USDT TRC20 uniquement" },
+              ].map(({ icon, text }) => (
+                <span key={text} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/8">
+                  {icon} {text}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center gap-4">
+              <div>
+                <span className="text-3xl font-display font-extrabold text-cyan-400">$15</span>
+                <span className="text-zinc-500 text-sm ml-1">/mois</span>
+              </div>
+              <Button
+                className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
+                variant="outline"
+                onClick={() => setIsSubscribeOpen(true)}
+                disabled={user?.isSuspended}
+              >
+                <Zap className="w-4 h-4" />
+                Souscrire maintenant
+              </Button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
 
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -201,6 +286,63 @@ export default function Plans() {
           Le dépôt requis est débité de votre solde. Assurez-vous d'avoir le montant nécessaire avant d'activer un plan.
         </p>
       </motion.div>
+
+      {/* SUBSCRIPTION MODAL */}
+      <Modal
+        isOpen={isSubscribeOpen}
+        onClose={() => { setIsSubscribeOpen(false); setSubHash(""); }}
+        title="Abonnement Retrait Rapide"
+        description="Payez 15$ en USDT TRC20 pour activer les retraits instantanés sans délai."
+      >
+        <div className="mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/20 p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Zap className="w-4 h-4 text-cyan-400" />
+            <p className="text-sm font-semibold text-white">Adresse de paiement USDT TRC20</p>
+          </div>
+          <p className="text-xs text-zinc-500 mb-3">Envoyez exactement <span className="text-cyan-400 font-bold">15 USDT</span> sur le réseau Tron (TRC20).</p>
+          <div className="flex items-center gap-2 bg-black/40 border border-white/8 rounded-xl p-3">
+            <span className="flex-1 font-mono text-xs text-zinc-300 truncate">{SUBSCRIPTION_ADDRESS}</span>
+            <button
+              onClick={copySubscriptionAddress}
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-5 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-400 mb-0.5">Remboursement garanti</p>
+              <p className="text-xs text-zinc-400">En cas de non-satisfaction, votre remboursement est immédiat et sans conditions.</p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubscribe} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Hash de la transaction</Label>
+            <Input
+              required
+              value={subHash}
+              onChange={e => setSubHash(e.target.value)}
+              placeholder="Collez le hash de votre transaction USDT TRC20..."
+            />
+            <p className="text-xs text-zinc-600">Copiez le hash après avoir envoyé exactement 15 USDT.</p>
+          </div>
+          <Button
+            type="submit"
+            className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
+            variant="outline"
+            isLoading={subscriptionMutation.isPending}
+          >
+            <Zap className="w-4 h-4" />
+            Confirmer l'abonnement
+          </Button>
+        </form>
+      </Modal>
     </AppLayout>
   );
 }
