@@ -2,6 +2,7 @@ import { PublicLayout } from "@/components/layout";
 import { Button } from "@/components/ui-core";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
 import { ChevronRight, ShieldCheck, Zap, Coins, TrendingUp, Users, Star, Check } from "lucide-react";
 
 const fadeUp = (delay = 0) => ({
@@ -10,11 +11,22 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.55, delay, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] },
 });
 
+function useMemberCounter(start = 1251, intervalMs = 5000) {
+  const [count, setCount] = useState(start);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount((prev) => prev + Math.floor(Math.random() * 3) + 2);
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+  return count.toLocaleString("fr-FR");
+}
+
 const stats = [
-  { value: "12,400+", label: "Utilisateurs actifs", color: "text-amber-400" },
+  { value: null, label: "Membres actifs", color: "text-amber-400", live: true },
   { value: "$2.8M", label: "Distribués en gains", color: "text-cyan-400" },
   { value: "99.9%", label: "Disponibilité", color: "text-emerald-400" },
-  { value: "< 24h", label: "Traitement retraits", color: "text-violet-400" },
+  { value: "< 48h", label: "Traitement retraits", color: "text-violet-400" },
 ];
 
 const features = [
@@ -76,6 +88,7 @@ const plans = [
 ];
 
 export default function Home() {
+  const memberCount = useMemberCounter(1251, 5000);
   return (
     <PublicLayout>
       <div className="flex-1 flex flex-col">
@@ -138,7 +151,7 @@ export default function Home() {
 
                 {/* Trust indicators */}
                 <motion.div {...fadeUp(0.26)} className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 text-sm text-slate-600">
-                  {["Gratuit à l'inscription", "Retrait en 24h", "Support 7j/7"].map((item, i) => (
+                  {["Gratuit à l'inscription", "Retrait en 48h", "Support 7j/7"].map((item, i) => (
                     <span key={i} className="flex items-center gap-1.5 shrink-0">
                       <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                       {item}
@@ -234,8 +247,24 @@ export default function Home() {
                   transition={{ delay: 0.3 + i * 0.08 }}
                   className="text-center px-6 py-2"
                 >
-                  <p className={`text-3xl md:text-4xl font-display font-black mb-1 ${stat.color}`}>{stat.value}</p>
-                  <p className="text-xs text-slate-600 uppercase tracking-wider font-semibold">{stat.label}</p>
+                  <p className={`text-3xl md:text-4xl font-display font-black mb-1 ${stat.color}`}>
+                    {stat.live ? (
+                      <span className="tabular-nums">{memberCount}</span>
+                    ) : (
+                      stat.value
+                    )}
+                  </p>
+                  <p className="text-xs text-slate-600 uppercase tracking-wider font-semibold">
+                    {stat.live && (
+                      <span className="inline-flex items-center gap-1">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-70" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400" />
+                        </span>
+                      </span>
+                    )}{" "}
+                    {stat.label}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -388,7 +417,7 @@ export default function Home() {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-6 text-xs text-slate-700">Pas de frais à l'inscription · Retrait disponible sous 24h</p>
+              <p className="mt-6 text-xs text-slate-700">Pas de frais à l'inscription · Retrait disponible sous 48h</p>
             </motion.div>
           </div>
         </section>
