@@ -1,6 +1,9 @@
 import { db, plansTable, usersTable, bonusCatalogTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+
+// Ensure schema columns added after initial migrations are present
+await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_active boolean NOT NULL DEFAULT false`);
 
 const plans = [
   { name: "Starter", depositRequired: "45", tasksPerDay: 3, gainPerTask: "7", totalPerDay: "21" },
