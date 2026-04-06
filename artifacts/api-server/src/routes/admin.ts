@@ -226,12 +226,15 @@ router.get("/transactions", async (req, res) => {
     t.status === "pending" && t.type === "withdrawal" && t.activePlanId !== null;
   const isPremiumPendingDeposit = (t: typeof mapped[0]) =>
     t.status === "pending" && t.type === "deposit" && t.activePlanId !== null;
+  const isPendingSubscription = (t: typeof mapped[0]) =>
+    t.status === "pending" && t.type === "subscription";
   const isOtherPending = (t: typeof mapped[0]) =>
-    t.status === "pending" && t.activePlanId === null;
+    t.status === "pending" && t.type !== "subscription" && t.activePlanId === null;
 
   const sorted = [
     ...mapped.filter(isPremiumPendingWithdrawal),
     ...mapped.filter(isPremiumPendingDeposit),
+    ...mapped.filter(isPendingSubscription),
     ...mapped.filter(isOtherPending),
     ...mapped.filter(t => t.status !== "pending"),
   ];

@@ -135,7 +135,17 @@ export default function AdminTransactions() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
-                        <span className="capitalize font-medium text-zinc-300">{tx.type === "withdrawal" ? "Retrait" : "Dépôt"}</span>
+                        <span className={cn(
+                          "capitalize font-medium",
+                          tx.type === "subscription" ? "text-violet-300" : "text-zinc-300"
+                        )}>
+                          {tx.type === "withdrawal" ? "Retrait" : tx.type === "subscription" ? "Abonnement" : "Dépôt"}
+                        </span>
+                        {tx.type === "subscription" && tx.status === "pending" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-400 uppercase">
+                            🔔 À valider
+                          </span>
+                        )}
                         {isPriorityRow && tx.type === "withdrawal" && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 uppercase">
                             ⚡ Prioritaire
@@ -143,7 +153,7 @@ export default function AdminTransactions() {
                         )}
                       </div>
                     </td>
-                    <td className={cn("px-6 py-4 font-bold whitespace-nowrap", tx.type === 'deposit' ? 'text-emerald-400' : 'text-rose-400')}>
+                    <td className={cn("px-6 py-4 font-bold whitespace-nowrap", tx.type === 'withdrawal' ? 'text-rose-400' : tx.type === 'subscription' ? 'text-violet-400' : 'text-emerald-400')}>
                       {formatCurrency(tx.amount)} {tx.currency}
                     </td>
                     <td className="px-6 py-4 text-xs font-mono text-zinc-400 max-w-[200px] truncate" title={tx.txHash || tx.walletAddress || ''}>
