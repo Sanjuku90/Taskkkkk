@@ -29,6 +29,13 @@
       "when": 1775249361621,
       "tag": "0003_add_game_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1744000000000,
+      "tag": "0004_add_subscription_active",
+      "breakpoints": true
     }
   ]
 }
