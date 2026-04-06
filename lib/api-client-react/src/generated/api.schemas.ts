@@ -38,6 +38,7 @@ export interface User {
   isSuspended: boolean;
   activePlanId?: number | null;
   planActivatedAt?: string | null;
+  subscriptionActive: boolean;
   createdAt?: string;
 }
 
@@ -86,6 +87,7 @@ export type TransactionType =
 export const TransactionType = {
   deposit: "deposit",
   withdrawal: "withdrawal",
+  subscription: "subscription",
 } as const;
 
 export type TransactionStatus =
@@ -116,6 +118,7 @@ export type CreateTransactionRequestType =
 export const CreateTransactionRequestType = {
   deposit: "deposit",
   withdrawal: "withdrawal",
+  subscription: "subscription",
 } as const;
 
 export type CreateTransactionRequestCurrency =
@@ -172,6 +175,7 @@ export type AdminTransactionType =
 export const AdminTransactionType = {
   deposit: "deposit",
   withdrawal: "withdrawal",
+  subscription: "subscription",
 } as const;
 
 export type AdminTransactionStatus =

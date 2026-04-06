@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 export const transactionsTable = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  type: text("type").notNull().$type<"deposit" | "withdrawal">(),
+  type: text("type").notNull().$type<"deposit" | "withdrawal" | "subscription">(),
   amount: numeric("amount", { precision: 18, scale: 6 }).notNull(),
   currency: text("currency").notNull().$type<"USDT" | "TRX">(),
   status: text("status").notNull().default("pending").$type<"pending" | "approved" | "rejected">(),

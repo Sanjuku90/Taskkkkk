@@ -94,6 +94,7 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       isSuspended: user.isSuspended,
       activePlanId: user.activePlanId,
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+      subscriptionActive: user.subscriptionActive,
       referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
@@ -142,6 +143,7 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       isSuspended: user.isSuspended,
       activePlanId: user.activePlanId,
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+      subscriptionActive: user.subscriptionActive,
       referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
@@ -176,6 +178,7 @@ router.get("/me", async (req, res) => {
     isSuspended: user.isSuspended,
     activePlanId: user.activePlanId,
     planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
+    subscriptionActive: user.subscriptionActive,
     referralCode: user.referralCode,
     createdAt: user.createdAt.toISOString(),
   });

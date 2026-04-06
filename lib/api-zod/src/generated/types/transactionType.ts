@@ -12,4 +12,5 @@ export type TransactionType =
 export const TransactionType = {
   deposit: "deposit",
   withdrawal: "withdrawal",
+  subscription: "subscription",
 } as const;

@@ -43,6 +43,7 @@ export const LoginResponse = zod.object({
     isSuspended: zod.boolean(),
     activePlanId: zod.number().nullish(),
     planActivatedAt: zod.string().nullish(),
+    subscriptionActive: zod.boolean(),
     createdAt: zod.string().optional(),
   }),
   message: zod.string(),
@@ -67,6 +68,7 @@ export const GetMeResponse = zod.object({
   isSuspended: zod.boolean(),
   activePlanId: zod.number().nullish(),
   planActivatedAt: zod.string().nullish(),
+  subscriptionActive: zod.boolean(),
   createdAt: zod.string().optional(),
 });
 
@@ -139,7 +141,7 @@ export const CompleteTaskResponse = zod.object({
  */
 export const GetMyTransactionsResponseItem = zod.object({
   id: zod.number(),
-  type: zod.enum(["deposit", "withdrawal"]),
+  type: zod.enum(["deposit", "withdrawal", "subscription"]),
   amount: zod.number(),
   currency: zod.string(),
   status: zod.enum(["pending", "approved", "rejected"]),
@@ -157,7 +159,7 @@ export const GetMyTransactionsResponse = zod.array(
  * @summary Create a deposit or withdrawal request
  */
 export const CreateTransactionBody = zod.object({
-  type: zod.enum(["deposit", "withdrawal"]),
+  type: zod.enum(["deposit", "withdrawal", "subscription"]),
   amount: zod.number(),
   currency: zod.enum(["USDT", "TRX"]),
   txHash: zod.string().nullish(),
@@ -254,7 +256,7 @@ export const GetAdminTransactionsResponseItem = zod.object({
   userId: zod.number(),
   username: zod.string(),
   email: zod.string(),
-  type: zod.enum(["deposit", "withdrawal"]),
+  type: zod.enum(["deposit", "withdrawal", "subscription"]),
   amount: zod.number(),
   currency: zod.string(),
   status: zod.enum(["pending", "approved", "rejected"]),

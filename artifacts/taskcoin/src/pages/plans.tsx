@@ -1,11 +1,11 @@
 import { AppLayout } from "@/components/layout";
 import { useRequireAuth } from "@/hooks/use-auth-wrapper";
-import { useGetPlans, useActivatePlan, useCreateTransaction, getGetMeQueryKey, getGetMyTasksQueryKey, getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
+import { useGetPlans, useActivatePlan, useCreateTransaction, useGetMyTransactions, getGetMeQueryKey, getGetMyTasksQueryKey, getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, Button, Badge, Modal, Label, Input } from "@/components/ui-core";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock, Copy, RefreshCw } from "lucide-react";
+import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock, Copy, RefreshCw, Clock } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -30,6 +30,7 @@ const SUBSCRIPTION_ADDRESS = "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS";
 export default function Plans() {
   const { user } = useRequireAuth();
   const { data: plans, isLoading } = useGetPlans();
+  const { data: transactions } = useGetMyTransactions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activatingId, setActivatingId] = useState<number | null>(null);
@@ -38,6 +39,11 @@ export default function Plans() {
 
   const currentPlan = plans?.find(p => p.id === user?.activePlanId);
   const currentPlanDeposit = currentPlan ? currentPlan.depositRequired : -1;
+
+  const hasPendingSubscription = transactions?.some(
+    tx => (tx.type as string) === "subscription" && tx.status === "pending"
+  ) ?? false;
+  const subscriptionActive = user?.subscriptionActive ?? false;
 
   const activateMutation = useActivatePlan({
     mutation: {
@@ -70,7 +76,7 @@ export default function Plans() {
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    subscriptionMutation.mutate({ data: { type: "deposit", amount: 15, currency: "USDT", txHash: subHash } });
+    subscriptionMutation.mutate({ data: { type: "subscription", amount: 15, currency: "USDT", txHash: subHash } });
   };
 
   const copySubscriptionAddress = () => {
@@ -153,15 +159,27 @@ export default function Plans() {
                 <span className="text-3xl font-display font-extrabold text-cyan-400">$15</span>
                 <span className="text-zinc-500 text-sm ml-1">/mois</span>
               </div>
-              <Button
-                className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
-                variant="outline"
-                onClick={() => setIsSubscribeOpen(true)}
-                disabled={user?.isSuspended}
-              >
-                <Zap className="w-4 h-4" />
-                Souscrire maintenant
-              </Button>
+              {subscriptionActive ? (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
+                  <Check className="w-4 h-4" />
+                  Abonnement actif
+                </div>
+              ) : hasPendingSubscription ? (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-sm font-semibold">
+                  <Clock className="w-4 h-4" />
+                  En cours de validation…
+                </div>
+              ) : (
+                <Button
+                  className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
+                  variant="outline"
+                  onClick={() => setIsSubscribeOpen(true)}
+                  disabled={user?.isSuspended}
+                >
+                  <Zap className="w-4 h-4" />
+                  Souscrire maintenant
+                </Button>
+              )}
             </div>
           </div>
         </div>

@@ -12,4 +12,5 @@ export type CreateTransactionRequestType =
 export const CreateTransactionRequestType = {
   deposit: "deposit",
   withdrawal: "withdrawal",
+  subscription: "subscription",
 } as const;

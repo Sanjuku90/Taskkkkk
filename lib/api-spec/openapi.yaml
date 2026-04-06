@@ -483,9 +483,11 @@ components:
         planActivatedAt:
           type: string
           nullable: true
+        subscriptionActive:
+          type: boolean
         createdAt:
           type: string
-      required: [id, email, username, balance, isAdmin, isSuspended]
+      required: [id, email, username, balance, isAdmin, isSuspended, subscriptionActive]
 
     Plan:
       type: object
@@ -561,7 +563,7 @@ components:
           type: integer
         type:
           type: string
-          enum: [deposit, withdrawal]
+          enum: [deposit, withdrawal, subscription]
         amount:
           type: number
         currency:
@@ -589,7 +591,7 @@ components:
       properties:
         type:
           type: string
-          enum: [deposit, withdrawal]
+          enum: [deposit, withdrawal, subscription]
         amount:
           type: number
         currency:
@@ -678,7 +680,7 @@ components:
           type: string
         type:
           type: string
-          enum: [deposit, withdrawal]
+          enum: [deposit, withdrawal, subscription]
         amount:
           type: number
         currency:

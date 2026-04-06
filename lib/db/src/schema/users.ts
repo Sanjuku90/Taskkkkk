@@ -15,6 +15,7 @@ export const usersTable = pgTable("users", {
   registrationIp: varchar("registration_ip", { length: 45 }),
   referralCode: varchar("referral_code", { length: 16 }).unique(),
   referredById: integer("referred_by_id"),
+  subscriptionActive: boolean("subscription_active").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

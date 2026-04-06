@@ -287,6 +287,10 @@ router.post("/transactions/:txId/validate", async (req, res) => {
       await db.update(usersTable).set({
         balance: sql`${usersTable.balance} - ${Number(tx.amount)}`,
       }).where(eq(usersTable.id, tx.userId));
+    } else if (tx.type === "subscription") {
+      await db.update(usersTable).set({
+        subscriptionActive: true,
+      }).where(eq(usersTable.id, tx.userId));
     }
 
     res.json({ message: "Transaction approved" });

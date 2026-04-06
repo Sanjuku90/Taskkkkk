@@ -15,5 +15,6 @@ export interface User {
   isSuspended: boolean;
   activePlanId?: number | null;
   planActivatedAt?: string | null;
+  subscriptionActive: boolean;
   createdAt?: string;
 }
