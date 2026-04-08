@@ -118,7 +118,7 @@ export default function Dashboard() {
           iconColor="text-primary"
           delay={0}
         >
-          <div className="flex gap-2 mt-1">
+          <div className="flex flex-wrap gap-2 mt-1">
             <Link href="/transactions">
               <Button size="sm" className="h-8 text-xs gap-1.5">
                 <ArrowDownToLine className="w-3.5 h-3.5" />
@@ -129,6 +129,12 @@ export default function Dashboard() {
               <Button size="sm" variant="outline" className="h-8 text-xs border-primary/30 gap-1.5">
                 <ArrowUpFromLine className="w-3.5 h-3.5" />
                 {t("dashboard", "withdraw")}
+              </Button>
+            </Link>
+            <Link href="/transactions">
+              <Button size="sm" variant="outline" className="h-8 text-xs border-violet-500/30 text-violet-400 hover:bg-violet-500/10 gap-1.5">
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+                Transfert
               </Button>
             </Link>
           </div>
