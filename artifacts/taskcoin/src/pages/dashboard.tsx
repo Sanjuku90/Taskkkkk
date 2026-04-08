@@ -21,7 +21,7 @@ function StatCard({
       transition={{ duration: 0.4, delay }}
     >
       <Card className={`relative overflow-hidden bg-gradient-to-br ${gradient} border-white/8 h-full`}>
-        <div className="absolute top-0 right-0 p-5 opacity-[0.06]">
+        <div className="absolute top-0 right-0 p-5 opacity-[0.06] pointer-events-none">
           <Icon className="w-24 h-24" />
         </div>
         <CardHeader className="pb-2">
