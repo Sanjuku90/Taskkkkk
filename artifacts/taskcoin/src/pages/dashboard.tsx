@@ -131,7 +131,7 @@ export default function Dashboard() {
                 {t("dashboard", "withdraw")}
               </Button>
             </Link>
-            <Link href="/transactions">
+            <Link href="/transactions?action=transfer">
               <Button size="sm" variant="outline" className="h-8 text-xs border-violet-500/30 text-violet-400 hover:bg-violet-500/10 gap-1.5">
                 <ArrowRightLeft className="w-3.5 h-3.5" />
                 Transfert

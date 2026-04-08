@@ -3,7 +3,7 @@ import { useRequireAuth } from "@/hooks/use-auth-wrapper";
 import { useGetMyTransactions, useCreateTransaction, getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, Button, Badge, Input, Label, Modal } from "@/components/ui-core";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight } from "lucide-react";
@@ -60,6 +60,14 @@ export default function Transactions() {
   const [isTransferring, setIsTransferring] = useState(false);
 
   const lastTxType = useRef<TxType>("deposit");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "transfer") {
+      setIsTransferOpen(true);
+      window.history.replaceState({}, "", "/transactions");
+    }
+  }, []);
 
   const createTxMutation = useCreateTransaction({
     mutation: {
