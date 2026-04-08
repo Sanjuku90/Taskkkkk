@@ -137,13 +137,18 @@ export default function AdminTransactions() {
                       <div className="flex flex-col gap-1">
                         <span className={cn(
                           "capitalize font-medium",
-                          tx.type === "subscription" ? "text-violet-300" : "text-zinc-300"
+                          tx.type === "subscription" ? "text-violet-300" : tx.type === "transfer" ? "text-blue-300" : "text-zinc-300"
                         )}>
-                          {tx.type === "withdrawal" ? "Retrait" : tx.type === "subscription" ? "Abonnement" : "Dépôt"}
+                          {tx.type === "withdrawal" ? "Retrait" : tx.type === "subscription" ? "Abonnement" : tx.type === "transfer" ? "Transfert" : "Dépôt"}
                         </span>
                         {tx.type === "subscription" && tx.status === "pending" && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-400 uppercase">
                             🔔 À valider
+                          </span>
+                        )}
+                        {tx.type === "transfer" && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-400 uppercase">
+                            ⚡ Auto-approuvé
                           </span>
                         )}
                         {isPriorityRow && tx.type === "withdrawal" && (

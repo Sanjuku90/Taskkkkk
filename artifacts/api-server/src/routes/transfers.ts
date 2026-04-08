@@ -1,0 +1,94 @@
+import { Router } from "express";
+import { db, usersTable, transactionsTable } from "@workspace/db";
+import { eq, or, sql } from "drizzle-orm";
+
+const router = Router();
+
+const FEE_RATE = 0.05;
+
+router.post("/", async (req, res) => {
+  if (!req.session.userId) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const { recipientIdentifier, amount: rawAmount } = req.body ?? {};
+  if (!recipientIdentifier || typeof recipientIdentifier !== "string" || !rawAmount) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const amount = Number(rawAmount);
+
+  if (amount < 1) {
+    res.status(400).json({ error: "Minimum transfer amount is $1" });
+    return;
+  }
+
+  const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
+  if (!sender) {
+    res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  const [recipient] = await db.select().from(usersTable).where(
+    or(
+      eq(usersTable.email, recipientIdentifier.toLowerCase()),
+      eq(usersTable.username, recipientIdentifier)
+    )
+  ).limit(1);
+
+  if (!recipient) {
+    res.status(404).json({ error: "Recipient not found" });
+    return;
+  }
+
+  if (recipient.id === sender.id) {
+    res.status(400).json({ error: "Cannot transfer to yourself" });
+    return;
+  }
+
+  const fee = Math.round(amount * FEE_RATE * 100) / 100;
+  const totalDeducted = Math.round((amount + fee) * 100) / 100;
+
+  if (Number(sender.balance) < totalDeducted) {
+    res.status(400).json({ error: "Insufficient balance" });
+    return;
+  }
+
+  await db.update(usersTable).set({
+    balance: sql`${usersTable.balance} - ${totalDeducted}`,
+  }).where(eq(usersTable.id, sender.id));
+
+  await db.update(usersTable).set({
+    balance: sql`${usersTable.balance} + ${amount}`,
+  }).where(eq(usersTable.id, recipient.id));
+
+  await db.insert(transactionsTable).values([
+    {
+      userId: sender.id,
+      type: "transfer" as any,
+      amount: String(totalDeducted),
+      currency: "USDT",
+      status: "approved",
+      note: `OUT:${recipient.username}`,
+    },
+    {
+      userId: recipient.id,
+      type: "transfer" as any,
+      amount: String(amount),
+      currency: "USDT",
+      status: "approved",
+      note: `IN:${sender.username}`,
+    },
+  ]);
+
+  res.json({
+    message: "Transfer successful",
+    amountSent: amount,
+    fee,
+    totalDeducted,
+    recipient: recipient.username,
+  });
+});
+
+export default router;

@@ -6,12 +6,19 @@ import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { motion } from "framer-motion";
 
 type TxType = "deposit" | "withdrawal";
 type Currency = "USDT" | "TRX";
+
+function parseTransferNote(note: string | null): { direction: "out" | "in"; counterparty: string } | null {
+  if (!note) return null;
+  if (note.startsWith("OUT:")) return { direction: "out", counterparty: note.slice(4) };
+  if (note.startsWith("IN:")) return { direction: "in", counterparty: note.slice(3) };
+  return null;
+}
 
 const DEPOSIT_ADDRESS = "TAB1oeEKDS5NATwFAaUrTioDU9djX7anyS";
 
@@ -47,6 +54,11 @@ export default function Transactions() {
   const [withAddress, setWithAddress] = useState("");
   const [withDisclaimer, setWithDisclaimer] = useState(false);
 
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferRecipient, setTransferRecipient] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
+
   const lastTxType = useRef<TxType>("deposit");
 
   const createTxMutation = useCreateTransaction({
@@ -80,6 +92,32 @@ export default function Transactions() {
     createTxMutation.mutate({ data: { type: "withdrawal", amount: Number(withAmount), currency: withCurrency, walletAddress: withAddress } });
   };
 
+  const handleTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(transferAmount);
+    if (!transferRecipient || amount <= 0) return;
+    setIsTransferring(true);
+    try {
+      const res = await fetch("/api/transfers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientIdentifier: transferRecipient, amount }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur lors du transfert");
+      queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
+      toast({ title: "Transfert effectué", description: `${amount} USDT envoyé à @${data.recipient}. Frais : ${data.fee} USDT.` });
+      setIsTransferOpen(false);
+      setTransferRecipient("");
+      setTransferAmount("");
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
   const copyAddress = () => {
     navigator.clipboard.writeText(DEPOSIT_ADDRESS);
     toast({ title: t("common", "copied"), description: "Adresse copiée !" });
@@ -97,7 +135,7 @@ export default function Transactions() {
           <h1 className="text-3xl sm:text-4xl font-display font-extrabold text-white mb-1">{t("transactions", "title")}</h1>
           <p className="text-zinc-500 text-sm">{t("transactions", "subtitle")}</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-3">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-3 flex-wrap">
           <Button
             className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 gap-2"
             variant="outline"
@@ -113,6 +151,14 @@ export default function Transactions() {
           >
             <ArrowUpFromLine className="w-4 h-4" />
             {t("transactions", "withdrawal")}
+          </Button>
+          <Button
+            className="border-violet-500/30 text-violet-400 hover:bg-violet-500/10 gap-2"
+            variant="outline"
+            onClick={() => setIsTransferOpen(true)}
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+            Transfert
           </Button>
         </motion.div>
       </div>
@@ -178,49 +224,62 @@ export default function Transactions() {
                     transition={{ delay: i * 0.04 }}
                     className="hover:bg-white/3 transition-colors group"
                   >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform group-hover:scale-105",
-                          tx.type === "deposit" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-                        )}>
-                          {tx.type === "deposit" ? <ArrowDownToLine className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-white text-sm">
-                            {tx.type === "deposit" ? t("transactions", "deposit") : t("transactions", "withdrawal")}
-                          </p>
-                          <p className="text-xs text-zinc-600">{formatDate(tx.createdAt)}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={cn("font-bold", tx.type === "deposit" ? "text-emerald-400" : "text-rose-400")}>
-                        {tx.type === "deposit" ? "+" : "-"}{formatCurrency(tx.amount)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 hidden sm:table-cell">
-                      <span className="px-2 py-0.5 rounded-lg bg-white/8 text-xs font-mono font-semibold text-zinc-300">{tx.currency}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="space-y-1.5">
-                        <Badge variant={tx.status === "approved" ? "success" : tx.status === "rejected" ? "destructive" : "warning"}>
-                          {tx.status === "approved" ? t("common", "approved") : tx.status === "rejected" ? t("common", "rejected") : t("common", "pending")}
-                        </Badge>
-                        {tx.status === "rejected" && tx.note && (
-                          <div className="flex items-start gap-1.5 p-2 rounded-lg bg-rose-500/8 border border-rose-500/15">
-                            <span className="text-rose-400 text-xs">⚠</span>
-                            <div>
-                              <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide">{t("transactions", "rejectionReason")}</p>
-                              <p className="text-xs text-rose-300">{tx.note}</p>
+                    {(() => {
+                      const transfer = tx.type === "transfer" ? parseTransferNote(tx.note ?? null) : null;
+                      const isIncoming = transfer?.direction === "in";
+                      const iconColor = tx.type === "transfer"
+                        ? (isIncoming ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-violet-500/10 border-violet-500/20 text-violet-400")
+                        : tx.type === "deposit" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400";
+                      const amountColor = tx.type === "transfer"
+                        ? (isIncoming ? "text-emerald-400" : "text-violet-400")
+                        : tx.type === "deposit" ? "text-emerald-400" : "text-rose-400";
+                      const label = tx.type === "transfer"
+                        ? (isIncoming ? `Reçu de @${transfer?.counterparty}` : `Envoyé à @${transfer?.counterparty}`)
+                        : tx.type === "deposit" ? t("transactions", "deposit") : t("transactions", "withdrawal");
+                      const sign = (tx.type === "deposit" || (tx.type === "transfer" && isIncoming)) ? "+" : "-";
+                      return (
+                        <>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className={cn("w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform group-hover:scale-105", iconColor)}>
+                                {tx.type === "deposit" ? <ArrowDownToLine className="w-4 h-4" /> : tx.type === "transfer" ? <ArrowLeftRight className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-white text-sm">{label}</p>
+                                <p className="text-xs text-zinc-600">{formatDate(tx.createdAt)}</p>
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell text-xs text-zinc-600 font-mono">
-                      {tx.txHash ? `Hash: ${tx.txHash.substring(0, 10)}…` : tx.walletAddress ? `To: ${tx.walletAddress.substring(0, 10)}…` : "—"}
-                    </td>
+                          </td>
+                          <td className="px-5 py-4">
+                            <span className={cn("font-bold", amountColor)}>
+                              {sign}{formatCurrency(tx.amount)}
+                            </span>
+                          </td>
+                          <td className="px-5 py-4 hidden sm:table-cell">
+                            <span className="px-2 py-0.5 rounded-lg bg-white/8 text-xs font-mono font-semibold text-zinc-300">{tx.currency}</span>
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="space-y-1.5">
+                              <Badge variant={tx.status === "approved" ? "success" : tx.status === "rejected" ? "destructive" : "warning"}>
+                                {tx.status === "approved" ? t("common", "approved") : tx.status === "rejected" ? t("common", "rejected") : t("common", "pending")}
+                              </Badge>
+                              {tx.status === "rejected" && tx.note && !tx.note.startsWith("OUT:") && !tx.note.startsWith("IN:") && (
+                                <div className="flex items-start gap-1.5 p-2 rounded-lg bg-rose-500/8 border border-rose-500/15">
+                                  <span className="text-rose-400 text-xs">⚠</span>
+                                  <div>
+                                    <p className="text-[10px] font-semibold text-rose-400 uppercase tracking-wide">{t("transactions", "rejectionReason")}</p>
+                                    <p className="text-xs text-rose-300">{tx.note}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-5 py-4 hidden lg:table-cell text-xs text-zinc-600 font-mono">
+                            {tx.type === "transfer" ? `Transfert interne` : tx.txHash ? `Hash: ${tx.txHash.substring(0, 10)}…` : tx.walletAddress ? `To: ${tx.walletAddress.substring(0, 10)}…` : "—"}
+                          </td>
+                        </>
+                      );
+                    })()}
                   </motion.tr>
                 ))
               )}
@@ -324,6 +383,71 @@ export default function Transactions() {
             disabled={!withDisclaimer || createTxMutation.isPending}
           >
             {t("transactions", "submitWithdrawal")}
+          </Button>
+        </form>
+      </Modal>
+      {/* TRANSFER MODAL */}
+      <Modal
+        isOpen={isTransferOpen}
+        onClose={() => { setIsTransferOpen(false); setTransferRecipient(""); setTransferAmount(""); }}
+        title="Transfert interne"
+        description="Envoyez des fonds à un autre compte TaskCoin instantanément."
+      >
+        <form onSubmit={handleTransfer} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Destinataire</Label>
+            <Input
+              required
+              value={transferRecipient}
+              onChange={e => setTransferRecipient(e.target.value)}
+              placeholder="Email ou nom d'utilisateur"
+            />
+            <p className="text-[11px] text-zinc-600">Entrez l'email ou le nom d'utilisateur du destinataire</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Montant (USDT)</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="1"
+              required
+              value={transferAmount}
+              onChange={e => setTransferAmount(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+
+          {Number(transferAmount) > 0 && (
+            <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-2 text-sm">
+              <div className="flex justify-between text-zinc-300">
+                <span>Montant envoyé</span>
+                <span className="font-bold">{formatCurrency(Number(transferAmount))} USDT</span>
+              </div>
+              <div className="flex justify-between text-zinc-400">
+                <span>Frais (5%)</span>
+                <span>-{formatCurrency(Number(transferAmount) * 0.05)} USDT</span>
+              </div>
+              <div className="border-t border-white/10 pt-2 flex justify-between text-white font-bold">
+                <span>Total débité</span>
+                <span className="text-violet-400">{formatCurrency(Number(transferAmount) * 1.05)} USDT</span>
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <p className="text-xs text-zinc-400">Les transferts sont instantanés et <span className="text-amber-300 font-semibold">irréversibles</span>. Vérifiez bien l'identifiant du destinataire.</p>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20"
+            variant="outline"
+            isLoading={isTransferring}
+            disabled={!transferRecipient || !transferAmount || Number(transferAmount) <= 0}
+          >
+            <ArrowLeftRight className="w-4 h-4 mr-2" />
+            Confirmer le transfert
           </Button>
         </form>
       </Modal>
