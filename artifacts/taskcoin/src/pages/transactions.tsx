@@ -442,6 +442,10 @@ export default function Transactions() {
             </div>
           )}
 
+          <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 flex items-start gap-2">
+            <span className="text-violet-400 text-sm shrink-0">👥</span>
+            <p className="text-xs text-zinc-400">Condition d'accès : vous devez avoir <span className="text-violet-300 font-semibold">au moins 1 filleul</span> sous votre compte pour pouvoir transférer des fonds.</p>
+          </div>
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-xs text-zinc-400">Les transferts sont instantanés et <span className="text-amber-300 font-semibold">irréversibles</span>. Vérifiez bien l'identifiant du destinataire.</p>

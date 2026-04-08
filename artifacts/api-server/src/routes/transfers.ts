@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, transactionsTable } from "@workspace/db";
-import { eq, or, sql } from "drizzle-orm";
+import { eq, or, sql, count } from "drizzle-orm";
 
 const router = Router();
 
@@ -27,6 +27,17 @@ router.post("/", async (req, res) => {
   const [sender] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
   if (!sender) {
     res.status(401).json({ error: "User not found" });
+    return;
+  }
+
+  // Sender must have at least 1 referral to be allowed to transfer
+  const [referralCount] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(eq(usersTable.referredById, sender.id));
+
+  if (!referralCount || referralCount.total < 1) {
+    res.status(403).json({ error: "Vous devez avoir parrainé au moins 1 utilisateur pour pouvoir effectuer un transfert." });
     return;
   }
 
