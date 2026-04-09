@@ -6,14 +6,14 @@ import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight, Info } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight, Info, Gift } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { motion } from "framer-motion";
 import { getVipTier } from "@/lib/vip";
 
 type TxType = "deposit" | "withdrawal";
 type Currency = "USDT" | "TRX";
-type TxTab = "all" | "deposit" | "withdrawal" | "transfer";
+type TxTab = "all" | "deposit" | "withdrawal" | "transfer" | "bonus";
 
 function parseTransferNote(note: string | null): { direction: "out" | "in"; counterparty: string } | null {
   if (!note) return null;
@@ -140,18 +140,25 @@ export default function Transactions() {
 
   const vipTier = getVipTier(totalDeposited);
 
+  const isBonusTx = (tx: { type: string; note?: string | null }) =>
+    (tx.type as string) === "bonus" || tx.note === "DAILY_LOGIN_BONUS" || (tx.note?.startsWith("VIP_BONUS:") ?? false);
+
   const filteredTx = (transactions ?? []).filter(tx => {
     if (txTab === "deposit") return tx.type === "deposit";
-    if (txTab === "withdrawal") return tx.type === "withdrawal";
+    if (txTab === "withdrawal") return tx.type === "withdrawal" && !isBonusTx(tx);
     if (txTab === "transfer") return tx.type === "transfer";
+    if (txTab === "bonus") return isBonusTx(tx);
     return true;
   });
+
+  const bonusCount = (transactions ?? []).filter(isBonusTx).length;
 
   const txTabDefs: { key: TxTab; label: string; icon: React.ElementType; color: string }[] = [
     { key: "all", label: "Tout", icon: TrendingUp, color: "text-zinc-300" },
     { key: "deposit", label: t("transactions", "deposit"), icon: ArrowDownToLine, color: "text-emerald-400" },
     { key: "withdrawal", label: t("transactions", "withdrawal"), icon: ArrowUpFromLine, color: "text-rose-400" },
     { key: "transfer", label: "Transferts", icon: ArrowLeftRight, color: "text-violet-400" },
+    { key: "bonus", label: "Bonus", icon: Gift, color: "text-emerald-300" },
   ];
 
   return (
@@ -232,6 +239,8 @@ export default function Transactions() {
             )}>
               {tab.key === "all" ? (transactions?.length ?? 0)
                 : tab.key === "transfer" ? (transactions ?? []).filter(t => t.type === "transfer").length
+                : tab.key === "bonus" ? bonusCount
+                : tab.key === "withdrawal" ? (transactions ?? []).filter(t => t.type === "withdrawal" && !isBonusTx(t)).length
                 : (transactions ?? []).filter(t => t.type === tab.key).length}
             </span>
           </button>
@@ -279,24 +288,36 @@ export default function Transactions() {
                     className="hover:bg-white/3 transition-colors group"
                   >
                     {(() => {
+                      const isBonus = isBonusTx(tx);
                       const transfer = tx.type === "transfer" ? parseTransferNote(tx.note ?? null) : null;
                       const isIncoming = transfer?.direction === "in";
-                      const iconColor = tx.type === "transfer"
+                      const iconColor = isBonus
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+                        : tx.type === "transfer"
                         ? (isIncoming ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-violet-500/10 border-violet-500/20 text-violet-400")
                         : tx.type === "deposit" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-rose-500/10 border-rose-500/20 text-rose-400";
-                      const amountColor = tx.type === "transfer"
+                      const amountColor = isBonus
+                        ? "text-emerald-300"
+                        : tx.type === "transfer"
                         ? (isIncoming ? "text-emerald-400" : "text-violet-400")
                         : tx.type === "deposit" ? "text-emerald-400" : "text-rose-400";
-                      const label = tx.type === "transfer"
+                      const bonusLabel = tx.note === "DAILY_LOGIN_BONUS"
+                        ? "Bonus de connexion quotidien"
+                        : tx.note?.startsWith("VIP_BONUS:")
+                        ? `Bonus VIP ${tx.note.slice(10)}`
+                        : "Bonus";
+                      const label = isBonus
+                        ? bonusLabel
+                        : tx.type === "transfer"
                         ? (isIncoming ? `Reçu de @${transfer?.counterparty}` : `Envoyé à @${transfer?.counterparty}`)
                         : tx.type === "deposit" ? t("transactions", "deposit") : t("transactions", "withdrawal");
-                      const sign = (tx.type === "deposit" || (tx.type === "transfer" && isIncoming)) ? "+" : "-";
+                      const sign = (tx.type === "deposit" || isBonus || (tx.type === "transfer" && isIncoming)) ? "+" : "-";
                       return (
                         <>
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-3">
                               <div className={cn("w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition-transform group-hover:scale-105", iconColor)}>
-                                {tx.type === "deposit" ? <ArrowDownToLine className="w-4 h-4" /> : tx.type === "transfer" ? <ArrowLeftRight className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
+                                {isBonus ? <Gift className="w-4 h-4" /> : tx.type === "deposit" ? <ArrowDownToLine className="w-4 h-4" /> : tx.type === "transfer" ? <ArrowLeftRight className="w-4 h-4" /> : <ArrowUpFromLine className="w-4 h-4" />}
                               </div>
                               <div>
                                 <p className="font-semibold text-white text-sm">{label}</p>

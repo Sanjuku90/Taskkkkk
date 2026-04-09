@@ -20,6 +20,7 @@ import AdminBonusTasks from "@/pages/admin/bonus-tasks";
 import AdminBonusCatalog from "@/pages/admin/bonus-catalog";
 import Referral from "@/pages/referral";
 import Profile from "@/pages/profile";
+import Rules from "@/pages/rules";
 import GamesHub from "@/pages/games/index";
 import CoinFlip from "@/pages/games/coinflip";
 import Mines from "@/pages/games/mines";
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/tasks" component={Tasks} />
       <Route path="/transactions" component={Transactions} />
       <Route path="/referral" component={Referral} />
+      <Route path="/rules" component={Rules} />
       <Route path="/profile" component={Profile} />
       <Route path="/games" component={GamesHub} />
       <Route path="/games/coinflip" component={CoinFlip} />

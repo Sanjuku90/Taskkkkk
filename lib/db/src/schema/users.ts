@@ -17,6 +17,7 @@ export const usersTable = pgTable("users", {
   referredById: integer("referred_by_id"),
   subscriptionActive: boolean("subscription_active").notNull().default(false),
   lastLoginBonusDate: text("last_login_bonus_date"),
+  claimedVipBonuses: text("claimed_vip_bonuses").default("[]"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -10,6 +10,7 @@ export interface VipTier {
   icon: string;
   transferFee: number;
   perks: string[];
+  claimBonus: number;
 }
 
 export const VIP_TIERS: VipTier[] = [
@@ -22,6 +23,7 @@ export const VIP_TIERS: VipTier[] = [
     textColor: "text-amber-700",
     icon: "🥉",
     transferFee: 5,
+    claimBonus: 0,
     perks: [
       "Accès à toutes les fonctionnalités de base",
       "Frais de transfert : 5%",
@@ -37,10 +39,12 @@ export const VIP_TIERS: VipTier[] = [
     textColor: "text-zinc-300",
     icon: "🥈",
     transferFee: 5,
+    claimBonus: 10,
     perks: [
       "Tout Bronze inclus",
       "Frais de transfert : 5%",
       "Badge Silver affiché sur votre profil",
+      "Bonus de palier réclamable : +10$",
     ],
   },
   {
@@ -52,10 +56,12 @@ export const VIP_TIERS: VipTier[] = [
     textColor: "text-amber-400",
     icon: "🥇",
     transferFee: 3,
+    claimBonus: 50,
     perks: [
       "Tout Silver inclus",
       "Frais de transfert réduits : 3%",
       "Badge Gold affiché sur votre profil",
+      "Bonus de palier réclamable : +50$",
     ],
   },
   {
@@ -67,11 +73,13 @@ export const VIP_TIERS: VipTier[] = [
     textColor: "text-cyan-300",
     icon: "💎",
     transferFee: 0,
+    claimBonus: 150,
     perks: [
       "Tout Gold inclus",
       "Frais de transfert : 0%",
       "Retraits traités en priorité",
       "Support dédié",
+      "Bonus de palier réclamable : +150$",
     ],
   },
 ];

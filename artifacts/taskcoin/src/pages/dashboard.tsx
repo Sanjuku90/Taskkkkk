@@ -9,6 +9,9 @@ import { useI18n } from "@/lib/i18n";
 import { motion, AnimatePresence } from "framer-motion";
 import { getVipTier, getNextVipTier, VIP_TIERS } from "@/lib/vip";
 import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { getGetMyTransactionsQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 function StatCard({
   label, value, sub, icon: Icon, gradient, iconBg, iconColor, delay = 0, children
@@ -52,7 +55,17 @@ export default function Dashboard() {
   const { data: tasksData } = useGetMyTasks();
   const { data: transactions } = useGetMyTransactions();
   const { t } = useI18n();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showBonusBanner, setShowBonusBanner] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimedTiers, setClaimedTiers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      try { setClaimedTiers(JSON.parse((user as any).claimedVipBonuses ?? "[]")); } catch {}
+    }
+  }, [user]);
 
   const activePlan = plans?.find(p => p.id === user?.activePlanId);
   const completedTasks = tasksData?.tasks.filter(t => t.completed).length || 0;
@@ -67,6 +80,25 @@ export default function Dashboard() {
   const vipProgress = nextTier
     ? Math.min(100, ((totalDeposited - vipTier.minDeposit) / (nextTier.minDeposit - vipTier.minDeposit)) * 100)
     : 100;
+
+  const handleClaimVipBonus = async () => {
+    setIsClaiming(true);
+    try {
+      const res = await fetch("/api/vip/claim-bonus", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur lors de la réclamation");
+      setClaimedTiers(prev => [...prev, data.tier]);
+      queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
+      toast({ title: `Bonus ${data.tier} réclamé !`, description: `+${formatCurrency(data.bonusAmount)} crédité sur votre solde.` });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setIsClaiming(false);
+    }
+  };
 
   // Show login bonus banner if bonus transaction recorded today
   useEffect(() => {
@@ -274,12 +306,30 @@ export default function Dashboard() {
                   <p className={cn("text-xl font-bold", vipTier.textColor)}>{vipTier.rank}</p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {vipTier.perks.map((perk, i) => (
-                  <span key={i} className={cn("px-2.5 py-1 rounded-lg border text-xs font-medium", vipTier.bgColor, vipTier.borderColor, vipTier.textColor)}>
-                    ✓ {perk}
-                  </span>
-                ))}
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  {vipTier.perks.map((perk, i) => (
+                    <span key={i} className={cn("px-2.5 py-1 rounded-lg border text-xs font-medium", vipTier.bgColor, vipTier.borderColor, vipTier.textColor)}>
+                      ✓ {perk}
+                    </span>
+                  ))}
+                </div>
+                {vipTier.claimBonus > 0 && (
+                  claimedTiers.includes(vipTier.rank) ? (
+                    <div className={cn("inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold opacity-60", vipTier.bgColor, vipTier.borderColor, vipTier.textColor)}>
+                      <span>✓</span> Bonus {vipTier.rank} réclamé (+{formatCurrency(vipTier.claimBonus)})
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={handleClaimVipBonus}
+                      isLoading={isClaiming}
+                      className={cn("self-start gap-2 text-sm font-semibold", vipTier.rank === "Silver" ? "bg-zinc-600 hover:bg-zinc-500 text-white" : vipTier.rank === "Gold" ? "bg-amber-500 hover:bg-amber-400 text-zinc-950" : "bg-cyan-500 hover:bg-cyan-400 text-zinc-950")}
+                    >
+                      <Gift className="w-4 h-4" />
+                      Réclamer votre bonus {vipTier.rank} : +{formatCurrency(vipTier.claimBonus)}
+                    </Button>
+                  )
+                )}
               </div>
             </div>
 

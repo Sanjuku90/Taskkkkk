@@ -6,7 +6,7 @@ import { Button } from "./ui-core";
 import {
   LayoutDashboard, CheckSquare, Crown, Wallet, LogOut, Settings,
   Users, Activity, Menu, X, Star, BookOpen, UserPlus, ChevronRight,
-  Shield, Globe, Gamepad2, User, Megaphone, XCircle
+  Shield, Globe, Gamepad2, User, Megaphone, XCircle, ScrollText
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -145,6 +145,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     { icon: Wallet, label: t("nav", "transactions"), href: "/transactions" },
     { icon: UserPlus, label: t("nav", "referral"), href: "/referral" },
     { icon: Gamepad2, label: lang === "fr" ? "Jeux" : "Games", href: "/games" },
+    { icon: ScrollText, label: lang === "fr" ? "Règles" : "Rules", href: "/rules" },
   ];
 
   const bottomNavLabels: Record<string, string> = {
@@ -154,6 +155,7 @@ export function AppLayout({ children, adminMode = false }: { children: React.Rea
     "/transactions": lang === "fr" ? "Wallet" : "Wallet",
     "/referral": lang === "fr" ? "Parrainage" : "Referral",
     "/games": lang === "fr" ? "Jeux" : "Games",
+    "/rules": lang === "fr" ? "Règles" : "Rules",
   };
 
   const adminLinks: NavLink[] = [
