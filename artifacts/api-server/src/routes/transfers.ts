@@ -30,17 +30,6 @@ router.post("/", async (req, res) => {
     return;
   }
 
-  // Sender must have at least 1 referral to be allowed to transfer
-  const [referralCount] = await db
-    .select({ total: count() })
-    .from(usersTable)
-    .where(eq(usersTable.referredById, sender.id));
-
-  if (!referralCount || referralCount.total < 1) {
-    res.status(403).json({ error: "Vous devez avoir parrainé au moins 1 utilisateur pour pouvoir effectuer un transfert." });
-    return;
-  }
-
   const [recipient] = await db.select().from(usersTable).where(
     or(
       eq(usersTable.email, recipientIdentifier.toLowerCase()),
@@ -56,6 +45,27 @@ router.post("/", async (req, res) => {
   if (recipient.id === sender.id) {
     res.status(400).json({ error: "Cannot transfer to yourself" });
     return;
+  }
+
+  // Check recipient's referral count
+  const [recipientReferralCount] = await db
+    .select({ total: count() })
+    .from(usersTable)
+    .where(eq(usersTable.referredById, recipient.id));
+
+  const recipientHasFilleuls = recipientReferralCount && recipientReferralCount.total >= 1;
+
+  if (recipientHasFilleuls) {
+    // Recipient has filleuls — sender must also have at least 1 filleul to be allowed
+    const [senderReferralCount] = await db
+      .select({ total: count() })
+      .from(usersTable)
+      .where(eq(usersTable.referredById, sender.id));
+
+    if (!senderReferralCount || senderReferralCount.total < 1) {
+      res.status(403).json({ error: "Pour effectuer un transfert vers cet utilisateur, vous devez avoir parrainé au moins 1 utilisateur." });
+      return;
+    }
   }
 
   const fee = Math.round(amount * FEE_RATE * 100) / 100;
