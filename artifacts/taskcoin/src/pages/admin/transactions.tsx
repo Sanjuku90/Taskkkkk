@@ -6,7 +6,7 @@ import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Crown, ArrowUpDown } from "lucide-react";
+import { Crown, ArrowUpDown, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 
 const REJECTION_REASONS = [
   "Hash de transaction invalide ou introuvable",
@@ -20,11 +20,14 @@ const REJECTION_REASONS = [
   "Autre (voir note)",
 ];
 
+type Tab = "all" | "deposit" | "withdrawal";
+
 export default function AdminTransactions() {
   useRequireAuth(true);
   const { data: transactions, isLoading } = useGetAdminTransactions();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<Tab>("all");
 
   const [rejectModal, setRejectModal] = useState<{ open: boolean; txId: number | null }>({ open: false, txId: null });
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
@@ -68,11 +71,58 @@ export default function AdminTransactions() {
     validateMutation.mutate({ txId: rejectModal.txId, data: { action: "reject", note } });
   };
 
+  const filteredTx = (transactions ?? []).filter(tx => {
+    if (activeTab === "deposit") return tx.type === "deposit" || tx.type === "subscription";
+    if (activeTab === "withdrawal") return tx.type === "withdrawal";
+    return true;
+  });
+
+  const depositCount = (transactions ?? []).filter(t => t.type === "deposit" || t.type === "subscription").length;
+  const withdrawalCount = (transactions ?? []).filter(t => t.type === "withdrawal").length;
+  const pendingDeposits = (transactions ?? []).filter(t => (t.type === "deposit" || t.type === "subscription") && t.status === "pending").length;
+  const pendingWithdrawals = (transactions ?? []).filter(t => t.type === "withdrawal" && t.status === "pending").length;
+
+  const tabs: { key: Tab; label: string; icon: React.ElementType; count: number; pending: number; color: string }[] = [
+    { key: "all", label: "Toutes", icon: ArrowUpDown, count: transactions?.length ?? 0, pending: pendingDeposits + pendingWithdrawals, color: "text-zinc-300" },
+    { key: "deposit", label: "Dépôts", icon: ArrowDownToLine, count: depositCount, pending: pendingDeposits, color: "text-emerald-400" },
+    { key: "withdrawal", label: "Retraits", icon: ArrowUpFromLine, count: withdrawalCount, pending: pendingWithdrawals, color: "text-rose-400" },
+  ];
+
   return (
     <AppLayout adminMode>
       <div className="mb-6">
         <h1 className="text-4xl font-display font-bold text-white mb-2">Review Transactions</h1>
-        <p className="text-zinc-400">Approve or reject pending deposits and withdrawals.</p>
+        <p className="text-zinc-400">Approuver ou refuser les dépôts et demandes de retrait en attente.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-3 mb-6 flex-wrap">
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all",
+              activeTab === tab.key
+                ? "bg-white/10 border-white/20 text-white"
+                : "bg-white/3 border-white/8 text-zinc-500 hover:bg-white/7 hover:text-zinc-300"
+            )}
+          >
+            <tab.icon className={cn("w-4 h-4", activeTab === tab.key ? tab.color : "")} />
+            {tab.label}
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-md text-xs font-bold",
+              activeTab === tab.key ? "bg-white/15 text-white" : "bg-white/8 text-zinc-500"
+            )}>
+              {tab.count}
+            </span>
+            {tab.pending > 0 && (
+              <span className="px-1.5 py-0.5 rounded-md text-xs font-bold bg-amber-500/20 text-amber-400">
+                {tab.pending} en attente
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Legend */}
@@ -80,11 +130,7 @@ export default function AdminTransactions() {
         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <Crown className="w-3.5 h-3.5 text-amber-400" />
           <span className="text-amber-300 font-semibold">PREMIUM</span>
-          <span>— plan actif · priorité haute · affiché en premier</span>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
-          <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500" />
-          <span>Retraits premium · Dépôts premium · Sans plan</span>
+          <span>— plan actif · priorité haute</span>
         </div>
       </div>
 
@@ -105,7 +151,9 @@ export default function AdminTransactions() {
             <tbody className="divide-y divide-white/5">
               {isLoading ? (
                 <tr><td colSpan={7} className="px-6 py-8 text-center text-zinc-500">Chargement...</td></tr>
-              ) : transactions?.map((tx) => {
+              ) : filteredTx.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-zinc-600">Aucune transaction dans cette catégorie.</td></tr>
+              ) : filteredTx.map((tx) => {
                 const isPremium = !!tx.activePlanId;
                 const isPriorityRow = isPremium && tx.status === "pending";
                 return (
@@ -137,24 +185,15 @@ export default function AdminTransactions() {
                       <div className="flex flex-col gap-1">
                         <span className={cn(
                           "capitalize font-medium",
-                          tx.type === "subscription" ? "text-violet-300" : tx.type === "transfer" ? "text-blue-300" : "text-zinc-300"
+                          tx.type === "subscription" ? "text-violet-300" : tx.type === "transfer" ? "text-blue-300" : tx.type === "withdrawal" ? "text-rose-300" : "text-emerald-300"
                         )}>
                           {tx.type === "withdrawal" ? "Retrait" : tx.type === "subscription" ? "Abonnement" : tx.type === "transfer" ? "Transfert" : "Dépôt"}
                         </span>
                         {tx.type === "subscription" && tx.status === "pending" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-400 uppercase">
-                            🔔 À valider
-                          </span>
-                        )}
-                        {tx.type === "transfer" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-400 uppercase">
-                            ⚡ Auto-approuvé
-                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-400 uppercase">🔔 À valider</span>
                         )}
                         {isPriorityRow && tx.type === "withdrawal" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 uppercase">
-                            ⚡ Prioritaire
-                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 uppercase">⚡ Prioritaire</span>
                         )}
                       </div>
                     </td>
@@ -241,11 +280,7 @@ export default function AdminTransactions() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => setRejectModal({ open: false, txId: null })}
-            >
+            <Button variant="outline" className="flex-1" onClick={() => setRejectModal({ open: false, txId: null })}>
               Annuler
             </Button>
             <Button
@@ -255,7 +290,7 @@ export default function AdminTransactions() {
               isLoading={validateMutation.isPending}
               disabled={selectedReasons.length === 0}
             >
-              Confirmer le remboursement
+              Confirmer le refus
             </Button>
           </div>
         </div>

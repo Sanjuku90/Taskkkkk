@@ -4,9 +4,11 @@ import { useGetMe, useGetPlans, useGetMyTasks, useGetMyTransactions } from "@wor
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from "@/components/ui-core";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { Link } from "wouter";
-import { Wallet, TrendingUp, CheckCircle, ArrowRightLeft, AlertCircle, Crown, Zap, ArrowDownToLine, ArrowUpFromLine, ChevronRight } from "lucide-react";
+import { Wallet, TrendingUp, CheckCircle, ArrowRightLeft, AlertCircle, Crown, Zap, ArrowDownToLine, ArrowUpFromLine, ChevronRight, Gift } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { getVipTier, getNextVipTier, VIP_TIERS } from "@/lib/vip";
+import { useState, useEffect } from "react";
 
 function StatCard({
   label, value, sub, icon: Icon, gradient, iconBg, iconColor, delay = 0, children
@@ -50,6 +52,38 @@ export default function Dashboard() {
   const { data: tasksData } = useGetMyTasks();
   const { data: transactions } = useGetMyTransactions();
   const { t } = useI18n();
+  const [showBonusBanner, setShowBonusBanner] = useState(false);
+
+  const activePlan = plans?.find(p => p.id === user?.activePlanId);
+  const completedTasks = tasksData?.tasks.filter(t => t.completed).length || 0;
+  const totalTasks = tasksData?.tasks.length || 0;
+  const pendingTxs = transactions?.filter(t => t.status === "pending").length || 0;
+  const progressPct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+  const approved = (transactions ?? []).filter(t => t.status === "approved");
+  const totalDeposited = approved.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
+  const vipTier = getVipTier(totalDeposited);
+  const nextTier = getNextVipTier(vipTier);
+  const vipProgress = nextTier
+    ? Math.min(100, ((totalDeposited - vipTier.minDeposit) / (nextTier.minDeposit - vipTier.minDeposit)) * 100)
+    : 100;
+
+  // Show login bonus banner if bonus transaction recorded today
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    const bonusKey = `login_bonus_shown_${today}`;
+    if (transactions && !localStorage.getItem(bonusKey)) {
+      const hasTodayBonus = transactions.some(tx =>
+        tx.note === "DAILY_LOGIN_BONUS" &&
+        tx.createdAt.slice(0, 10) === today
+      );
+      if (hasTodayBonus) {
+        setShowBonusBanner(true);
+        localStorage.setItem(bonusKey, "1");
+        setTimeout(() => setShowBonusBanner(false), 5000);
+      }
+    }
+  }, [transactions]);
 
   if (authLoading || !user) {
     return (
@@ -64,14 +98,27 @@ export default function Dashboard() {
     );
   }
 
-  const activePlan = plans?.find(p => p.id === user.activePlanId);
-  const completedTasks = tasksData?.tasks.filter(t => t.completed).length || 0;
-  const totalTasks = tasksData?.tasks.length || 0;
-  const pendingTxs = transactions?.filter(t => t.status === "pending").length || 0;
-  const progressPct = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
   return (
     <AppLayout>
+      {/* Login bonus banner */}
+      <AnimatePresence>
+        {showBonusBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 flex items-center gap-3 px-4 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/25"
+          >
+            <Gift className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-300">Bonus de connexion quotidien !</p>
+              <p className="text-xs text-zinc-400">+1 USDT a été ajouté à votre solde pour votre connexion du jour.</p>
+            </div>
+            <button onClick={() => setShowBonusBanner(false)} className="ml-auto text-zinc-600 hover:text-white text-lg leading-none">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="mb-8">
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -82,13 +129,20 @@ export default function Dashboard() {
                 {t("dashboard", "welcome")}, <span className="gradient-text">{user.username}</span> 👋
               </h1>
             </div>
-            {activePlan && (
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20">
-                <Crown className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-primary">{activePlan.name}</span>
-                <Badge variant="success" className="text-[10px]">Actif</Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* VIP Rank badge */}
+              <div className={cn("flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-semibold", vipTier.bgColor, vipTier.borderColor, vipTier.textColor)}>
+                <span className="text-base leading-none">{vipTier.icon}</span>
+                <span>{vipTier.rank}</span>
               </div>
-            )}
+              {activePlan && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10 border border-primary/20">
+                  <Crown className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-semibold text-primary">{activePlan.name}</span>
+                  <Badge variant="success" className="text-[10px]">Actif</Badge>
+                </div>
+              )}
+            </div>
           </div>
         </motion.div>
       </div>
@@ -205,6 +259,52 @@ export default function Dashboard() {
           </Link>
         </StatCard>
       </div>
+
+      {/* VIP Rank card */}
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
+        <Card className={cn("relative overflow-hidden border", vipTier.borderColor)}>
+          <div className="p-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={cn("w-12 h-12 rounded-2xl border flex items-center justify-center text-2xl", vipTier.bgColor, vipTier.borderColor)}>
+                  {vipTier.icon}
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-0.5">Rang VIP</p>
+                  <p className={cn("text-xl font-bold", vipTier.textColor)}>{vipTier.rank}</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {vipTier.perks.map((perk, i) => (
+                  <span key={i} className={cn("px-2.5 py-1 rounded-lg border text-xs font-medium", vipTier.bgColor, vipTier.borderColor, vipTier.textColor)}>
+                    ✓ {perk}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {nextTier && (
+              <div className="mt-4 pt-4 border-t border-white/8">
+                <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
+                  <span>Progression vers {nextTier.icon} {nextTier.rank}</span>
+                  <span>{formatCurrency(totalDeposited)} / {formatCurrency(nextTier.minDeposit)}</span>
+                </div>
+                <div className="w-full bg-white/8 rounded-full h-2 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${vipProgress}%` }}
+                    transition={{ duration: 1.2, delay: 0.5 }}
+                    className={cn("h-full rounded-full", vipTier.rank === "Bronze" ? "bg-amber-700" : vipTier.rank === "Silver" ? "bg-zinc-400" : "bg-amber-400")}
+                  />
+                </div>
+                <p className="text-xs text-zinc-600 mt-1.5">
+                  Encore {formatCurrency(nextTier.minDeposit - totalDeposited)} de dépôts pour atteindre {nextTier.rank}
+                </p>
+              </div>
+            )}
+          </div>
+        </Card>
+      </motion.div>
 
       {/* Recent activity */}
       <div className="flex items-center justify-between mb-4">

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, transactionsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { rateLimit, getClientIp } from "../middleware/rate-limit";
@@ -133,12 +133,32 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
     req.session.save((err) => (err ? reject(err) : resolve())),
   );
 
+  // Daily login bonus: $1 once per calendar day
+  const todayStr = new Date().toISOString().slice(0, 10);
+  let loginBonusAwarded = false;
+  if (user.lastLoginBonusDate !== todayStr) {
+    await db.update(usersTable).set({
+      balance: sql`${usersTable.balance} + 1`,
+      lastLoginBonusDate: todayStr,
+    }).where(eq(usersTable.id, user.id));
+
+    await db.insert(transactionsTable).values({
+      userId: user.id,
+      type: "bonus" as any,
+      amount: "1",
+      currency: "USDT",
+      status: "approved",
+      note: "DAILY_LOGIN_BONUS",
+    });
+    loginBonusAwarded = true;
+  }
+
   res.json({
     user: {
       id: user.id,
       email: user.email,
       username: user.username,
-      balance: Number(user.balance),
+      balance: Number(user.balance) + (loginBonusAwarded ? 1 : 0),
       isAdmin: user.isAdmin,
       isSuspended: user.isSuspended,
       activePlanId: user.activePlanId,
@@ -147,6 +167,7 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
+    loginBonusAwarded,
     message: "Login successful",
   });
 });

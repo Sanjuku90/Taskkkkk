@@ -1,10 +1,14 @@
 import { Router } from "express";
 import { db, usersTable, transactionsTable } from "@workspace/db";
-import { eq, or, sql, count } from "drizzle-orm";
+import { eq, or, sql, count, sum, and } from "drizzle-orm";
 
 const router = Router();
 
-const FEE_RATE = 0.05;
+function getVipFeeRate(totalDeposited: number): number {
+  if (totalDeposited >= 15000) return 0;
+  if (totalDeposited >= 5000) return 0.03;
+  return 0.05;
+}
 
 router.post("/", async (req, res) => {
   if (!req.session.userId) {
@@ -68,7 +72,20 @@ router.post("/", async (req, res) => {
     }
   }
 
-  const fee = Math.round(amount * FEE_RATE * 100) / 100;
+  // Compute sender's total approved deposits to determine VIP fee rate
+  const [depositSum] = await db
+    .select({ total: sum(transactionsTable.amount) })
+    .from(transactionsTable)
+    .where(and(
+      eq(transactionsTable.userId, sender.id),
+      eq(transactionsTable.type, "deposit"),
+      eq(transactionsTable.status, "approved"),
+    ));
+
+  const totalDeposited = Number(depositSum?.total ?? 0);
+  const feeRate = getVipFeeRate(totalDeposited);
+
+  const fee = Math.round(amount * feeRate * 100) / 100;
   const totalDeducted = Math.round((amount + fee) * 100) / 100;
 
   if (Number(sender.balance) < totalDeducted) {
@@ -107,6 +124,7 @@ router.post("/", async (req, res) => {
     message: "Transfer successful",
     amountSent: amount,
     fee,
+    feeRate: feeRate * 100,
     totalDeducted,
     recipient: recipient.username,
   });

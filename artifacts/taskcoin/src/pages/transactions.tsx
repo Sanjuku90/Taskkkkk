@@ -6,12 +6,14 @@ import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, Copy, AlertTriangle, Wallet, TrendingUp, ArrowLeftRight, Info } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { motion } from "framer-motion";
+import { getVipTier } from "@/lib/vip";
 
 type TxType = "deposit" | "withdrawal";
 type Currency = "USDT" | "TRX";
+type TxTab = "all" | "deposit" | "withdrawal" | "transfer";
 
 function parseTransferNote(note: string | null): { direction: "out" | "in"; counterparty: string } | null {
   if (!note) return null;
@@ -41,6 +43,7 @@ export default function Transactions() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { t } = useI18n();
+  const [txTab, setTxTab] = useState<TxTab>("all");
 
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -135,6 +138,22 @@ export default function Transactions() {
   const totalDeposited = approved.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
   const totalWithdrawn = approved.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0);
 
+  const vipTier = getVipTier(totalDeposited);
+
+  const filteredTx = (transactions ?? []).filter(tx => {
+    if (txTab === "deposit") return tx.type === "deposit";
+    if (txTab === "withdrawal") return tx.type === "withdrawal";
+    if (txTab === "transfer") return tx.type === "transfer";
+    return true;
+  });
+
+  const txTabDefs: { key: TxTab; label: string; icon: React.ElementType; color: string }[] = [
+    { key: "all", label: "Tout", icon: TrendingUp, color: "text-zinc-300" },
+    { key: "deposit", label: t("transactions", "deposit"), icon: ArrowDownToLine, color: "text-emerald-400" },
+    { key: "withdrawal", label: t("transactions", "withdrawal"), icon: ArrowUpFromLine, color: "text-rose-400" },
+    { key: "transfer", label: "Transferts", icon: ArrowLeftRight, color: "text-violet-400" },
+  ];
+
   return (
     <AppLayout>
       {/* Header */}
@@ -192,6 +211,33 @@ export default function Transactions() {
         ))}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {txTabDefs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setTxTab(tab.key)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-all",
+              txTab === tab.key
+                ? "bg-white/10 border-white/20 text-white"
+                : "bg-white/3 border-white/8 text-zinc-500 hover:bg-white/7 hover:text-zinc-300"
+            )}
+          >
+            <tab.icon className={cn("w-3.5 h-3.5", txTab === tab.key ? tab.color : "")} />
+            {tab.label}
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-md text-xs font-bold",
+              txTab === tab.key ? "bg-white/15 text-white" : "bg-white/8 text-zinc-500"
+            )}>
+              {tab.key === "all" ? (transactions?.length ?? 0)
+                : tab.key === "transfer" ? (transactions ?? []).filter(t => t.type === "transfer").length
+                : (transactions ?? []).filter(t => t.type === tab.key).length}
+            </span>
+          </button>
+        ))}
+      </div>
+
       {/* Table */}
       <Card>
         <div className="overflow-x-auto">
@@ -214,7 +260,7 @@ export default function Transactions() {
                     </div>
                   </td>
                 </tr>
-              ) : !transactions?.length ? (
+              ) : !filteredTx.length ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-16 text-center">
                     <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center mx-auto mb-3">
@@ -224,7 +270,7 @@ export default function Transactions() {
                   </td>
                 </tr>
               ) : (
-                transactions.map((tx, i) => (
+                filteredTx.map((tx, i) => (
                   <motion.tr
                     key={tx.id}
                     initial={{ opacity: 0 }}
@@ -432,20 +478,38 @@ export default function Transactions() {
                 <span className="font-bold">{formatCurrency(Number(transferAmount))} USDT</span>
               </div>
               <div className="flex justify-between text-zinc-400">
-                <span>Frais (5%)</span>
-                <span>-{formatCurrency(Number(transferAmount) * 0.05)} USDT</span>
+                <span>Frais ({vipTier.transferFee}% — rang {vipTier.icon} {vipTier.rank})</span>
+                <span>-{formatCurrency(Number(transferAmount) * vipTier.transferFee / 100)} USDT</span>
               </div>
               <div className="border-t border-white/10 pt-2 flex justify-between text-white font-bold">
                 <span>Total débité</span>
-                <span className="text-violet-400">{formatCurrency(Number(transferAmount) * 1.05)} USDT</span>
+                <span className="text-violet-400">{formatCurrency(Number(transferAmount) * (1 + vipTier.transferFee / 100))} USDT</span>
               </div>
             </div>
           )}
 
-          <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 flex items-start gap-2">
-            <span className="text-violet-400 text-sm shrink-0">👥</span>
-            <p className="text-xs text-zinc-400">Condition d'accès : vous devez avoir <span className="text-violet-300 font-semibold">au moins 1 filleul</span> sous votre compte pour pouvoir transférer des fonds.</p>
+          {/* Transfer rules */}
+          <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 space-y-2">
+            <div className="flex items-center gap-2 mb-1">
+              <Info className="w-3.5 h-3.5 text-violet-400 shrink-0" />
+              <p className="text-xs font-semibold text-violet-300 uppercase tracking-wide">Règles de transfert</p>
+            </div>
+            <ul className="space-y-1.5 text-xs text-zinc-400">
+              <li className="flex items-start gap-2">
+                <span className="text-emerald-400 shrink-0 mt-0.5">✓</span>
+                <span>Vous pouvez toujours envoyer à un utilisateur qui n'a <span className="text-white font-medium">aucun filleul</span>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-rose-400 shrink-0 mt-0.5">✗</span>
+                <span>Si le destinataire a des filleuls, vous devez aussi avoir <span className="text-white font-medium">au moins 1 filleul</span> pour lui envoyer.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-amber-400 shrink-0 mt-0.5">★</span>
+                <span>Rang <span className="font-semibold">Gold</span> (5 000$+) : frais réduits à 3% — Rang <span className="font-semibold">Platinum</span> (15 000$+) : frais 0%.</span>
+              </li>
+            </ul>
           </div>
+
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-xs text-zinc-400">Les transferts sont instantanés et <span className="text-amber-300 font-semibold">irréversibles</span>. Vérifiez bien l'identifiant du destinataire.</p>
