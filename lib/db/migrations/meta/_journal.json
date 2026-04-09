@@ -36,6 +36,13 @@
       "when": 1744000000000,
       "tag": "0004_add_subscription_active",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775726461651,
+      "tag": "0005_add_login_bonus_columns",
+      "breakpoints": true
     }
   ]
 }
