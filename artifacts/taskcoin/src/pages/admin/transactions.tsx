@@ -185,9 +185,20 @@ export default function AdminTransactions() {
                       <div className="flex flex-col gap-1">
                         <span className={cn(
                           "capitalize font-medium",
-                          tx.type === "subscription" ? "text-violet-300" : tx.type === "transfer" ? "text-blue-300" : tx.type === "withdrawal" ? "text-rose-300" : "text-emerald-300"
+                          tx.type === "subscription" ? "text-violet-300" : tx.type === "transfer" ? "text-blue-300" : tx.type === "withdrawal" ? "text-rose-300" : (tx.type as string) === "bonus" ? "text-amber-300" : "text-emerald-300"
                         )}>
-                          {tx.type === "withdrawal" ? "Retrait" : tx.type === "subscription" ? "Abonnement" : tx.type === "transfer" ? "Transfert" : "Dépôt"}
+                          {tx.type === "withdrawal" ? "Retrait"
+                            : tx.type === "subscription" ? "Abonnement"
+                            : tx.type === "transfer" ? "Transfert"
+                            : (tx.type as string) === "bonus"
+                              ? (tx.note === "ADMIN_BONUS" ? "Bonus admin"
+                                : tx.note === "REFERRAL_COMMISSION" ? "Commission parrainage"
+                                : tx.note === "REFUND_SUBSCRIPTION" ? "Remboursement abo."
+                                : tx.note?.startsWith("REFUND_PLAN:") ? `Remb. ${tx.note.slice(12)}`
+                                : tx.note === "DAILY_LOGIN_BONUS" ? "Bonus connexion"
+                                : tx.note?.startsWith("VIP_BONUS:") ? `Bonus VIP`
+                                : "Bonus")
+                            : "Dépôt"}
                         </span>
                         {tx.type === "subscription" && tx.status === "pending" && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-400 uppercase">🔔 À valider</span>

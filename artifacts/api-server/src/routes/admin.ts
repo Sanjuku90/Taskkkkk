@@ -148,6 +148,15 @@ router.post("/users/:userId/bonus", async (req, res) => {
     balance: sql`${usersTable.balance} + ${parsed.data.amount}`,
   }).where(eq(usersTable.id, userId));
 
+  await db.insert(transactionsTable).values({
+    userId,
+    type: "bonus",
+    amount: String(parsed.data.amount),
+    currency: "USDT",
+    status: "approved",
+    note: "ADMIN_BONUS",
+  });
+
   res.json({ message: `Bonus of $${parsed.data.amount} added` });
 });
 
@@ -218,6 +227,14 @@ router.post("/users/:userId/refund", async (req, res) => {
       planActivatedAt: null,
       balance: sql`${usersTable.balance} + ${refundAmount}`,
     }).where(eq(usersTable.id, userId));
+    await db.insert(transactionsTable).values({
+      userId,
+      type: "bonus",
+      amount: String(refundAmount),
+      currency: "USDT",
+      status: "approved",
+      note: `REFUND_PLAN:${plan.name}`,
+    });
     res.json({ message: `Plan ${plan.name} remboursé. $${refundAmount} crédité au solde.`, refundAmount });
     return;
   }
@@ -232,6 +249,14 @@ router.post("/users/:userId/refund", async (req, res) => {
       subscriptionActive: false,
       balance: sql`${usersTable.balance} + ${refundAmount}`,
     }).where(eq(usersTable.id, userId));
+    await db.insert(transactionsTable).values({
+      userId,
+      type: "bonus",
+      amount: String(refundAmount),
+      currency: "USDT",
+      status: "approved",
+      note: "REFUND_SUBSCRIPTION",
+    });
     res.json({ message: `Abonnement remboursé. $${refundAmount} crédité au solde.`, refundAmount });
     return;
   }
@@ -343,6 +368,14 @@ router.post("/transactions/:txId/validate", async (req, res) => {
           await db.update(usersTable).set({
             balance: sql`${usersTable.balance} + ${commission}`,
           }).where(eq(usersTable.id, depositor.referredById));
+          await db.insert(transactionsTable).values({
+            userId: depositor.referredById,
+            type: "bonus",
+            amount: String(commission),
+            currency: "USDT",
+            status: "approved",
+            note: "REFERRAL_COMMISSION",
+          });
         }
       }
     } else if (tx.type === "withdrawal") {

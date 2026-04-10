@@ -141,7 +141,13 @@ export default function Transactions() {
   const vipTier = getVipTier(totalDeposited);
 
   const isBonusTx = (tx: { type: string; note?: string | null }) =>
-    (tx.type as string) === "bonus" || tx.note === "DAILY_LOGIN_BONUS" || (tx.note?.startsWith("VIP_BONUS:") ?? false);
+    (tx.type as string) === "bonus" ||
+    tx.note === "DAILY_LOGIN_BONUS" ||
+    tx.note === "ADMIN_BONUS" ||
+    tx.note === "REFUND_SUBSCRIPTION" ||
+    tx.note === "REFERRAL_COMMISSION" ||
+    (tx.note?.startsWith("VIP_BONUS:") ?? false) ||
+    (tx.note?.startsWith("REFUND_PLAN:") ?? false);
 
   const filteredTx = (transactions ?? []).filter(tx => {
     if (txTab === "deposit") return tx.type === "deposit";
@@ -303,6 +309,14 @@ export default function Transactions() {
                         : tx.type === "deposit" ? "text-emerald-400" : "text-rose-400";
                       const bonusLabel = tx.note === "DAILY_LOGIN_BONUS"
                         ? "Bonus de connexion quotidien"
+                        : tx.note === "ADMIN_BONUS"
+                        ? "Bonus administrateur"
+                        : tx.note === "REFERRAL_COMMISSION"
+                        ? "Commission de parrainage"
+                        : tx.note === "REFUND_SUBSCRIPTION"
+                        ? "Remboursement abonnement"
+                        : tx.note?.startsWith("REFUND_PLAN:")
+                        ? `Remboursement plan ${tx.note.slice(12)}`
                         : tx.note?.startsWith("VIP_BONUS:")
                         ? `Bonus VIP ${tx.note.slice(10)}`
                         : "Bonus";
