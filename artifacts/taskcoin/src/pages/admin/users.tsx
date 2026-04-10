@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, Ban, CheckCircle, Gift, MinusCircle, Crown, RotateCcw, Zap } from "lucide-react";
+import { Search, Ban, CheckCircle, Gift, MinusCircle, Crown, RotateCcw, Zap, Star } from "lucide-react";
 
 export default function AdminUsers() {
   useRequireAuth(true);
@@ -23,9 +23,10 @@ export default function AdminUsers() {
   const [deductLoading, setDeductLoading] = useState(false);
 
   const [refundModalUser, setRefundModalUser] = useState<{
-    id: number; username: string; planName: string | null; planDeposit: number | null; subscriptionActive: boolean;
+    id: number; username: string; planName: string | null; planDeposit: number | null; subscriptionActive: boolean; isSubscriptionSelected: boolean;
   } | null>(null);
   const [refundLoading, setRefundLoading] = useState(false);
+  const [selectionLoading, setSelectionLoading] = useState<number | null>(null);
 
   const suspendMutation = useSuspendUser({
     mutation: {
@@ -105,6 +106,27 @@ export default function AdminUsers() {
     }
   };
 
+  const handleToggleSelection = async (userId: number) => {
+    setSelectionLoading(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/toggle-subscription-selection`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      queryClient.invalidateQueries({ queryKey: getGetAdminUsersQueryKey() });
+      toast({ title: "Mise à jour", description: data.message });
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setSelectionLoading(null);
+    }
+  };
+
+  const selectedCount = users?.filter(u => (u as any).isSubscriptionSelected).length ?? 0;
+
   const filteredUsers = users?.filter(u => 
     u.username.toLowerCase().includes(search.toLowerCase()) || 
     u.email.toLowerCase().includes(search.toLowerCase())
@@ -116,6 +138,13 @@ export default function AdminUsers() {
         <div>
           <h1 className="text-4xl font-display font-bold text-white mb-2">Manage Users</h1>
           <p className="text-zinc-400">View accounts, adjust balances, and manage access.</p>
+          <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 w-fit">
+            <Star className="w-4 h-4 text-amber-400" />
+            <span className="text-sm text-amber-300 font-semibold">{selectedCount} / 1000 sélectionnés pour l'abonnement à 9$</span>
+            <div className="ml-2 h-2 w-24 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${Math.min(100, (selectedCount / 1000) * 100)}%` }} />
+            </div>
+          </div>
         </div>
         <div className="relative max-w-sm w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -176,6 +205,12 @@ export default function AdminUsers() {
                         <div className="text-[10px] text-zinc-700">Retrait standard (72h)</div>
                       </div>
                     )}
+                    {(user as any).isSubscriptionSelected && (
+                      <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/25">
+                        <Star className="w-3 h-3 text-amber-400" />
+                        <span className="text-amber-300 text-[10px] font-bold">Abonnement 9$</span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 font-bold text-primary">
                     {formatCurrency(user.balance)}
@@ -211,9 +246,24 @@ export default function AdminUsers() {
                             planName: user.planName ?? null,
                             planDeposit: (user as any).planDepositRequired ?? null,
                             subscriptionActive: (user as any).subscriptionActive ?? false,
+                            isSubscriptionSelected: (user as any).isSubscriptionSelected ?? false,
                           })}
                         >
                           <RotateCcw className="w-4 h-4 mr-1" /> Rembourser
+                        </Button>
+                      )}
+                      {!user.isAdmin && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={(user as any).isSubscriptionSelected
+                            ? "border-amber-500/40 text-amber-400 hover:bg-amber-500/10 hover:text-amber-300"
+                            : "border-zinc-500/40 text-zinc-400 hover:bg-zinc-500/10 hover:text-zinc-300"}
+                          onClick={() => handleToggleSelection(user.id)}
+                          isLoading={selectionLoading === user.id}
+                        >
+                          <Star className="w-4 h-4 mr-1" />
+                          {(user as any).isSubscriptionSelected ? "Désélectionner" : "Sélectionner 9$"}
                         </Button>
                       )}
                       <Button 
@@ -295,7 +345,7 @@ export default function AdminUsers() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">Abonnement Retrait Rapide</p>
-                    <p className="text-xs text-zinc-400">Montant : <span className="text-cyan-400 font-bold">$15</span></p>
+                    <p className="text-xs text-zinc-400">Montant : <span className="text-cyan-400 font-bold">${refundModalUser.isSubscriptionSelected ? "9" : "40"}</span></p>
                   </div>
                 </div>
                 <Button

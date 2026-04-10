@@ -79,6 +79,7 @@ router.get("/users", async (req, res) => {
       planName: u.activePlanId ? (planMap.get(u.activePlanId) ?? null) : null,
       planDepositRequired: u.activePlanId ? (planDepositMap.get(u.activePlanId) ?? null) : null,
       subscriptionActive: u.subscriptionActive,
+      isSubscriptionSelected: u.isSubscriptionSelected,
       registrationIp: u.registrationIp ?? null,
       createdAt: u.createdAt.toISOString(),
       totalDeposited: userTxs.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
@@ -244,7 +245,12 @@ router.post("/users/:userId/refund", async (req, res) => {
       res.status(400).json({ error: "Cet utilisateur n'a pas d'abonnement actif" });
       return;
     }
-    const refundAmount = 15;
+    const [lastSubTx] = await db.select({ amount: transactionsTable.amount })
+      .from(transactionsTable)
+      .where(and(eq(transactionsTable.userId, userId), eq(transactionsTable.type, "subscription"), eq(transactionsTable.status, "approved")))
+      .orderBy(desc(transactionsTable.createdAt))
+      .limit(1);
+    const refundAmount = lastSubTx ? Number(lastSubTx.amount) : (user.isSubscriptionSelected ? 9 : 40);
     await db.update(usersTable).set({
       subscriptionActive: false,
       balance: sql`${usersTable.balance} + ${refundAmount}`,
@@ -260,6 +266,34 @@ router.post("/users/:userId/refund", async (req, res) => {
     res.json({ message: `Abonnement remboursé. $${refundAmount} crédité au solde.`, refundAmount });
     return;
   }
+});
+
+router.post("/users/:userId/toggle-subscription-selection", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const userId = parseInt(req.params.userId);
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Utilisateur invalide" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  if (!user.isSubscriptionSelected) {
+    const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(usersTable).where(eq(usersTable.isSubscriptionSelected, true));
+    if (count >= 1000) {
+      res.status(400).json({ error: "La limite de 1000 utilisateurs sélectionnés est atteinte." });
+      return;
+    }
+  }
+
+  const newValue = !user.isSubscriptionSelected;
+  await db.update(usersTable).set({ isSubscriptionSelected: newValue }).where(eq(usersTable.id, userId));
+  res.json({ isSubscriptionSelected: newValue, message: newValue ? "Utilisateur sélectionné pour l'abonnement à 9$." : "Sélection retirée." });
 });
 
 router.get("/transactions", async (req, res) => {

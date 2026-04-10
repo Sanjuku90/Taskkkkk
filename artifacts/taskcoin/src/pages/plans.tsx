@@ -44,6 +44,8 @@ export default function Plans() {
     tx => (tx.type as string) === "subscription" && tx.status === "pending"
   ) ?? false;
   const subscriptionActive = user?.subscriptionActive ?? false;
+  const isSelected = user?.isSubscriptionSelected ?? false;
+  const subscriptionPrice = isSelected ? 9 : 40;
 
   const activateMutation = useActivatePlan({
     mutation: {
@@ -64,7 +66,7 @@ export default function Plans() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetMyTransactionsQueryKey() });
-        toast({ title: "Abonnement soumis !", description: "Votre paiement de 15$ est en attente de validation. L'accès sera activé sous peu." });
+        toast({ title: "Abonnement soumis !", description: `Votre paiement de ${subscriptionPrice}$ est en attente de validation. L'accès sera activé sous peu.` });
         setIsSubscribeOpen(false);
         setSubHash("");
       },
@@ -76,12 +78,12 @@ export default function Plans() {
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    subscriptionMutation.mutate({ data: { type: "subscription", amount: 15, currency: "USDT", txHash: subHash } });
+    subscriptionMutation.mutate({ data: { type: "subscription", amount: subscriptionPrice, currency: "USDT", txHash: subHash } });
   };
 
   const copySubscriptionAddress = () => {
     navigator.clipboard.writeText(SUBSCRIPTION_ADDRESS);
-    toast({ title: "Adresse copiée !", description: "Envoyez exactement 15 USDT (TRC20) à cette adresse." });
+    toast({ title: "Adresse copiée !", description: `Envoyez exactement ${subscriptionPrice} USDT (TRC20) à cette adresse.` });
   };
 
   const handleActivate = (planId: number) => {
@@ -123,23 +125,41 @@ export default function Plans() {
         transition={{ delay: 0.15 }}
         className="mb-10"
       >
-        <div className="relative rounded-3xl overflow-hidden border border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6">
+        <div className={`relative rounded-3xl overflow-hidden border p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-6 ${isSelected ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent" : "border-cyan-500/30 bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-transparent"}`}>
           {/* Glow */}
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-transparent pointer-events-none" />
-          <div className="absolute top-4 right-4">
-            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400">⚡ PREMIUM</span>
+          <div className={`absolute inset-0 pointer-events-none ${isSelected ? "bg-gradient-to-r from-amber-500/5 to-transparent" : "bg-gradient-to-r from-cyan-500/5 to-transparent"}`} />
+
+          {/* Top-right badge */}
+          <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${isSelected ? "bg-amber-500/20 border border-amber-500/30 text-amber-400" : "bg-cyan-500/20 border border-cyan-500/30 text-cyan-400"}`}>⚡ PREMIUM</span>
+            {isSelected && (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-400">✓ SÉLECTIONNÉ</span>
+            )}
           </div>
 
           {/* Icon */}
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
-            <Zap className="w-8 h-8 text-cyan-400" />
+          <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center shrink-0 ${isSelected ? "bg-amber-500/15 border-amber-500/25" : "bg-cyan-500/15 border-cyan-500/25"}`}>
+            <Zap className={`w-8 h-8 ${isSelected ? "text-amber-400" : "text-cyan-400"}`} />
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             <h2 className="text-xl font-display font-bold text-white mb-1">Abonnement Retrait Rapide</h2>
+
+            {isSelected ? (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 w-fit">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <p className="text-sm text-emerald-300 font-semibold">Vous avez été sélectionné par l'administrateur — tarif préférentiel de <span className="text-emerald-200">9$</span> au lieu de 40$</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl bg-rose-500/8 border border-rose-500/15 w-fit">
+                <Lock className="w-4 h-4 text-rose-400 shrink-0" />
+                <p className="text-sm text-zinc-400">Vous n'êtes pas encore sélectionné — tarif standard de <span className="text-white font-semibold">40$</span></p>
+              </div>
+            )}
+
             <p className="text-sm text-zinc-400 leading-relaxed mb-4">
-              Obtenez des retraits <span className="text-cyan-400 font-semibold">instantanés sans délai</span> — dépôt direct en USDT TRC20.
+              Obtenez des retraits <span className={`font-semibold ${isSelected ? "text-amber-400" : "text-cyan-400"}`}>instantanés sans délai</span> — dépôt direct en USDT TRC20.
               Remboursement immédiat en cas de non-satisfaction.
             </p>
             <div className="flex flex-wrap gap-3 text-xs text-zinc-400 mb-5">
@@ -154,10 +174,18 @@ export default function Plans() {
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-4">
-              <div>
-                <span className="text-3xl font-display font-extrabold text-cyan-400">$15</span>
-                <span className="text-zinc-500 text-sm ml-1">/mois</span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex items-baseline gap-2">
+                {!isSelected && (
+                  <span className="text-xl font-bold text-zinc-600 line-through">$40</span>
+                )}
+                <span className={`text-3xl font-display font-extrabold ${isSelected ? "text-amber-400" : "text-cyan-400"}`}>
+                  ${subscriptionPrice}
+                </span>
+                <span className="text-zinc-500 text-sm">/mois</span>
+                {isSelected && (
+                  <span className="text-sm font-bold text-zinc-600 line-through ml-1">$40</span>
+                )}
               </div>
               {subscriptionActive ? (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
@@ -171,7 +199,7 @@ export default function Plans() {
                 </div>
               ) : (
                 <Button
-                  className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
+                  className={isSelected ? "border-amber-500/40 text-amber-300 hover:bg-amber-500/15 gap-2" : "border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"}
                   variant="outline"
                   onClick={() => setIsSubscribeOpen(true)}
                   disabled={user?.isSuspended}
@@ -310,14 +338,21 @@ export default function Plans() {
         isOpen={isSubscribeOpen}
         onClose={() => { setIsSubscribeOpen(false); setSubHash(""); }}
         title="Abonnement Retrait Rapide"
-        description="Payez 15$ en USDT TRC20 pour activer les retraits instantanés sans délai."
+        description={`Payez ${subscriptionPrice}$ en USDT TRC20 pour activer les retraits instantanés sans délai.`}
       >
-        <div className="mb-6 rounded-2xl bg-gradient-to-br from-cyan-500/10 to-transparent border border-cyan-500/20 p-4">
+        {isSelected && (
+          <div className="mb-4 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25">
+            <Check className="w-4 h-4 text-amber-400 shrink-0" />
+            <p className="text-sm text-amber-300 font-semibold">Tarif préférentiel : <span className="text-amber-200">9$ USDT</span> (au lieu de 40$)</p>
+          </div>
+        )}
+
+        <div className={`mb-6 rounded-2xl bg-gradient-to-br to-transparent border p-4 ${isSelected ? "from-amber-500/10 border-amber-500/20" : "from-cyan-500/10 border-cyan-500/20"}`}>
           <div className="flex items-center gap-2 mb-1">
-            <Zap className="w-4 h-4 text-cyan-400" />
+            <Zap className={`w-4 h-4 ${isSelected ? "text-amber-400" : "text-cyan-400"}`} />
             <p className="text-sm font-semibold text-white">Adresse de paiement USDT TRC20</p>
           </div>
-          <p className="text-xs text-zinc-500 mb-3">Envoyez exactement <span className="text-cyan-400 font-bold">15 USDT</span> sur le réseau Tron (TRC20).</p>
+          <p className="text-xs text-zinc-500 mb-3">Envoyez exactement <span className={`font-bold ${isSelected ? "text-amber-400" : "text-cyan-400"}`}>{subscriptionPrice} USDT</span> sur le réseau Tron (TRC20).</p>
           <div className="flex items-center gap-2 bg-black/40 border border-white/8 rounded-xl p-3">
             <span className="flex-1 font-mono text-xs text-zinc-300 truncate">{SUBSCRIPTION_ADDRESS}</span>
             <button
@@ -348,11 +383,11 @@ export default function Plans() {
               onChange={e => setSubHash(e.target.value)}
               placeholder="Collez le hash de votre transaction USDT TRC20..."
             />
-            <p className="text-xs text-zinc-600">Copiez le hash après avoir envoyé exactement 15 USDT.</p>
+            <p className="text-xs text-zinc-600">Copiez le hash après avoir envoyé exactement {subscriptionPrice} USDT.</p>
           </div>
           <Button
             type="submit"
-            className="w-full border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15 gap-2"
+            className={`w-full gap-2 ${isSelected ? "border-amber-500/40 text-amber-300 hover:bg-amber-500/15" : "border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/15"}`}
             variant="outline"
             isLoading={subscriptionMutation.isPending}
           >

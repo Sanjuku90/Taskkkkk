@@ -16,5 +16,6 @@ export interface User {
   activePlanId?: number | null;
   planActivatedAt?: string | null;
   subscriptionActive: boolean;
+  isSubscriptionSelected: boolean;
   createdAt?: string;
 }

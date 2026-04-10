@@ -485,9 +485,11 @@ components:
           nullable: true
         subscriptionActive:
           type: boolean
+        isSubscriptionSelected:
+          type: boolean
         createdAt:
           type: string
-      required: [id, email, username, balance, isAdmin, isSuspended, subscriptionActive]
+      required: [id, email, username, balance, isAdmin, isSuspended, subscriptionActive, isSubscriptionSelected]
 
     Plan:
       type: object
