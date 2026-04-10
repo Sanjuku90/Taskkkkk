@@ -206,8 +206,9 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 top-11 z-50 w-[360px] max-h-[520px] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
+              className="absolute right-0 top-11 z-50 w-[340px] max-w-[calc(100vw-1rem)] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
               style={{
+                maxHeight: "min(520px, calc(100dvh - 180px))",
                 background: "linear-gradient(160deg, hsl(220, 45%, 8%) 0%, hsl(222, 47%, 6%) 100%)",
                 border: "1px solid hsl(220, 40%, 16%)",
               }}
