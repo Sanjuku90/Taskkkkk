@@ -1,0 +1,91 @@
+Downloading cache...
+==> Cloning from https://github.com/Sanjuku90/Taskkkkk
+==> Checking out commit 0d09bd00d0f03159e79c33908a4fa31657f26606 in branch master
+==> Downloaded 229MB in 2s. Extraction took 11s.
+==> Requesting Node.js version 20
+==> Using Node.js version 20.20.2 via /opt/render/project/src/.node-version
+==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+==> Running build command 'npm install -g pnpm@10.26.1 &&
+pnpm install --frozen-lockfile &&
+BASE_PATH=/ PORT=3000 pnpm --filter @workspace/taskcoin run build &&
+pnpm --filter @workspace/api-server run build &&
+cp -r artifacts/taskcoin/dist/public artifacts/api-server/dist/public &&
+pnpm --filter @workspace/db run migrate &&
+pnpm --filter @workspace/scripts run seed
+'...
+changed 1 package in 826ms
+1 package is looking for funding
+  run `npm fund` for details
+> @workspace/taskcoin@0.0.0 build /opt/render/project/src/artifacts/taskcoin
+> vite build --config vite.config.ts
+vite v7.3.1 building client environment for production...
+transforming...
+src/components/ui/tooltip.tsx (2:0): Error when using sourcemap for reporting an error: Can't resolve original location of error.
+✓ 2199 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/public/registerSW.js                0.13 kB
+dist/public/manifest.webmanifest         0.43 kB
+dist/public/index.html                   1.37 kB │ gzip:   0.59 kB
+dist/public/assets/index-0Jhd_N6Y.css  168.14 kB │ gzip:  23.89 kB
+dist/public/assets/index-6R5hGGUb.js   734.17 kB │ gzip: 210.98 kB
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.89s
+PWA v1.2.0
+mode      generateSW
+precache  14 entries (3416.74 KiB)
+files generated
+  dist/public/sw.js
+  dist/public/workbox-01f28f5c.js
+> @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+> node ./build.mjs
+  dist/index.mjs                       2.3mb ⚠️
+  dist/pino-worker.mjs               153.4kb
+  dist/pino-file.mjs                 142.1kb
+  dist/pino-pretty.mjs               114.6kb
+  dist/thread-stream-worker.mjs        7.3kb
+  dist/index.mjs.map                   4.0mb
+  dist/pino-worker.mjs.map           256.9kb
+  dist/pino-file.mjs.map             229.0kb
+  dist/pino-pretty.mjs.map           203.9kb
+  dist/thread-stream-worker.mjs.map   12.0kb
+⚡ Done in 436ms
+> @workspace/db@0.0.0 migrate /opt/render/project/src/lib/db
+> drizzle-kit migrate --config ./drizzle.config.ts
+Reading config file '/opt/render/project/src/lib/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[✓] migrations applied successfully!
+> @workspace/scripts@0.0.0 seed /opt/render/project/src/scripts
+> tsx ./src/seed.ts
+Seeding plans...
+Updated plan: Starter
+Updated plan: Basic
+Updated plan: Silver
+Updated plan: Gold
+Updated plan: Platinum
+Updated plan: Diamond
+Updated plan: VIP Elite
+Seeding admin user...
+Admin user already exists
+Seeding bonus catalog...
+Bonus already exists: Premier dépôt récompensé
+Bonus already exists: Activation de plan
+Bonus already exists: Premier filleul
+Bonus already exists: 5 filleuls actifs
+Bonus already exists: 10 filleuls — Super Parrain
+Bonus already exists: Investisseur Bronze — $200 déposés
+Bonus already exists: Investisseur Or — $500 déposés
+Bonus already exists: 7 jours sans relâche
+Seeding complete!
+==> Uploading build...
+==> Uploaded in 5.3s. Compression took 5.3s
+==> Build successful 🎉
+==> Deploying...
+==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+{"level":30,"time":1775799349719,"pid":68,"hostname":"srv-d6v87v4hg0os73dehaf0-hibernate-545d86cc6f-79kmx","staticDir":"/opt/render/project/src/artifacts/api-server/dist/public","msg":"Serving frontend static files"}
+{"level":30,"time":1775799349722,"pid":68,"hostname":"srv-d6v87v4hg0os73dehaf0-hibernate-545d86cc6f-79kmx","port":10000,"msg":"Server listening"}
+{"level":30,"time":1775799350472,"pid":68,"hostname":"srv-d6v87v4hg0os73dehaf0-hibernate-545d86cc6f-79kmx","req":{"id":1,"method":"HEAD","url":"/"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
