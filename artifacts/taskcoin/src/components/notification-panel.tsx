@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, X, CheckCheck, Mail, MailOpen, Megaphone, User } from "lucide-react";
+import { Bell, X, CheckCheck, Mail, MailOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -36,6 +36,96 @@ function timeAgo(dateStr: string): string {
   if (mins < 60) return `il y a ${mins} min`;
   if (hours < 24) return `il y a ${hours}h`;
   return `il y a ${days}j`;
+}
+
+function NotificationItem({
+  notif,
+  onRead,
+}: {
+  notif: Notification;
+  onRead: (id: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = notif.message.length > 120;
+
+  function handleClick() {
+    if (!notif.isRead) onRead(notif.id);
+    if (isLong) setExpanded(e => !e);
+  }
+
+  return (
+    <div
+      className={cn(
+        "px-4 py-3.5 flex items-start gap-3 transition-colors",
+        !notif.isRead && "bg-amber-500/4",
+        isLong ? "cursor-pointer hover:bg-white/5" : "hover:bg-white/4"
+      )}
+      onClick={handleClick}
+    >
+      <div className={cn(
+        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+        notif.isRead
+          ? "bg-white/5 border border-white/8"
+          : "bg-amber-500/15 border border-amber-500/20"
+      )}>
+        {notif.isRead
+          ? <MailOpen className="w-3.5 h-3.5 text-slate-500" />
+          : <Mail className="w-3.5 h-3.5 text-amber-400" />
+        }
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <p className={cn(
+            "text-sm font-semibold leading-tight",
+            notif.isRead ? "text-slate-400" : "text-white"
+          )}>
+            {notif.title}
+          </p>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {notif.targetType === "user" && (
+              <span className="px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase tracking-wider border border-cyan-500/20">
+                Perso
+              </span>
+            )}
+            {!notif.isRead && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50 shrink-0" />
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence initial={false}>
+          <motion.p
+            key={expanded ? "expanded" : "collapsed"}
+            initial={false}
+            animate={{ height: "auto" }}
+            className={cn(
+              "text-xs leading-relaxed whitespace-pre-wrap break-words",
+              notif.isRead ? "text-slate-500" : "text-slate-300",
+              !expanded && isLong && "line-clamp-2"
+            )}
+          >
+            {notif.message}
+          </motion.p>
+        </AnimatePresence>
+
+        <div className="flex items-center justify-between mt-1.5">
+          <p className="text-[10px] text-slate-600">{timeAgo(notif.createdAt)}</p>
+          {isLong && (
+            <button
+              onClick={e => { e.stopPropagation(); setExpanded(v => !v); if (!notif.isRead) onRead(notif.id); }}
+              className="flex items-center gap-0.5 text-[10px] text-slate-500 hover:text-amber-400 transition-colors"
+            >
+              {expanded
+                ? <><ChevronUp className="w-3 h-3" /> Réduire</>
+                : <><ChevronDown className="w-3 h-3" /> Lire la suite</>
+              }
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function NotificationPanel({ compact = false }: { compact?: boolean }) {
@@ -85,7 +175,7 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
         )}
         aria-label="Notifications"
       >
-        <Bell className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+        <Bell className="w-[18px] h-[18px]" />
         <AnimatePresence>
           {unreadCount > 0 && (
             <motion.span
@@ -116,13 +206,14 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 top-11 z-50 w-[340px] max-h-[480px] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
+              className="absolute right-0 top-11 z-50 w-[360px] max-h-[520px] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
               style={{
                 background: "linear-gradient(160deg, hsl(220, 45%, 8%) 0%, hsl(222, 47%, 6%) 100%)",
                 border: "1px solid hsl(220, 40%, 16%)",
               }}
             >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/6 shrink-0">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-amber-400" />
                   <span className="font-semibold text-white text-sm">Notifications</span>
@@ -152,7 +243,8 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              {/* List */}
+              <div className="flex-1 overflow-y-auto divide-y divide-white/4">
                 {notifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3 text-center px-6">
                     <div className="w-12 h-12 rounded-2xl bg-white/4 border border-white/8 flex items-center justify-center">
@@ -164,57 +256,13 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
                     </div>
                   </div>
                 ) : (
-                  <div className="divide-y divide-white/4">
-                    {notifications.map(notif => (
-                      <button
-                        key={notif.id}
-                        onClick={() => !notif.isRead && readMutation.mutate(notif.id)}
-                        className={cn(
-                          "w-full text-left px-4 py-3.5 flex items-start gap-3 transition-colors hover:bg-white/4",
-                          !notif.isRead && "bg-amber-500/4"
-                        )}
-                      >
-                        <div className={cn(
-                          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
-                          notif.isRead
-                            ? "bg-white/5 border border-white/8"
-                            : "bg-amber-500/15 border border-amber-500/20"
-                        )}>
-                          {notif.isRead
-                            ? <MailOpen className="w-3.5 h-3.5 text-slate-500" />
-                            : <Mail className="w-3.5 h-3.5 text-amber-400" />
-                          }
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-0.5">
-                            <p className={cn(
-                              "text-sm font-semibold leading-tight",
-                              notif.isRead ? "text-slate-400" : "text-white"
-                            )}>
-                              {notif.title}
-                            </p>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {notif.targetType === "user" && (
-                                <span className="px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 text-[9px] font-bold uppercase tracking-wider border border-cyan-500/20">
-                                  Perso
-                                </span>
-                              )}
-                              {!notif.isRead && (
-                                <span className="w-2 h-2 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50 shrink-0" />
-                              )}
-                            </div>
-                          </div>
-                          <p className={cn(
-                            "text-xs leading-relaxed line-clamp-2",
-                            notif.isRead ? "text-slate-600" : "text-slate-400"
-                          )}>
-                            {notif.message}
-                          </p>
-                          <p className="text-[10px] text-slate-600 mt-1">{timeAgo(notif.createdAt)}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                  notifications.map(notif => (
+                    <NotificationItem
+                      key={notif.id}
+                      notif={notif}
+                      onRead={id => readMutation.mutate(id)}
+                    />
+                  ))
                 )}
               </div>
             </motion.div>
