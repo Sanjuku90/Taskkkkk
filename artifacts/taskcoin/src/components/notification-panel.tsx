@@ -130,8 +130,17 @@ function NotificationItem({
 
 export function NotificationPanel({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [panelTop, setPanelTop] = useState(72);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["notifications"],
@@ -165,7 +174,14 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
   return (
     <div className="relative" ref={panelRef}>
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={buttonRef}
+        onClick={() => {
+          if (!open && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setPanelTop(rect.bottom + 8);
+          }
+          setOpen(o => !o);
+        }}
         className={cn(
           "relative flex items-center justify-center rounded-xl transition-all duration-200",
           compact
@@ -206,9 +222,12 @@ export function NotificationPanel({ compact = false }: { compact?: boolean }) {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -8 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="absolute right-0 top-11 z-50 w-[340px] max-w-[calc(100vw-1rem)] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60"
+              className="fixed right-4 z-50 w-[340px] max-w-[calc(100vw-1rem)] flex flex-col rounded-2xl overflow-hidden shadow-2xl shadow-black/60 md:absolute md:right-0 md:top-11 md:max-h-[520px]"
               style={{
-                maxHeight: "min(520px, calc(100dvh - 180px))",
+                ...(isMobile ? {
+                  top: panelTop,
+                  maxHeight: `calc(100dvh - ${panelTop}px - 80px - env(safe-area-inset-bottom, 0px))`,
+                } : {}),
                 background: "linear-gradient(160deg, hsl(220, 45%, 8%) 0%, hsl(222, 47%, 6%) 100%)",
                 border: "1px solid hsl(220, 40%, 16%)",
               }}
