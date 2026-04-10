@@ -9,7 +9,7 @@ import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock, Copy, RefreshCw, Clo
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-const SUBSCRIPTION_DURATION_DAYS = 30;
+const SUBSCRIPTION_DURATION_DAYS = 7;
 
 function useSubscriptionCountdown(activatedAt: string | null | undefined) {
   const [remaining, setRemaining] = useState<{ days: number; hours: number; minutes: number; seconds: number; expired: boolean } | null>(null);
@@ -243,7 +243,7 @@ export default function Plans() {
                     </div>
                   )}
                   {!countdown && (
-                    <div className="text-xs text-zinc-600 px-1">Durée : 30 jours</div>
+                    <div className="text-xs text-zinc-600 px-1">Durée : 7 jours</div>
                   )}
                 </div>
               ) : hasPendingSubscription ? (
