@@ -6,7 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
-import { Search, Ban, CheckCircle, Gift, MinusCircle, Crown } from "lucide-react";
+import { Search, Ban, CheckCircle, Gift, MinusCircle, Crown, RotateCcw, Zap } from "lucide-react";
 
 export default function AdminUsers() {
   useRequireAuth(true);
@@ -21,6 +21,11 @@ export default function AdminUsers() {
   const [deductModalUser, setDeductModalUser] = useState<{id: number, username: string} | null>(null);
   const [deductAmount, setDeductAmount] = useState("");
   const [deductLoading, setDeductLoading] = useState(false);
+
+  const [refundModalUser, setRefundModalUser] = useState<{
+    id: number; username: string; planName: string | null; planDeposit: number | null; subscriptionActive: boolean;
+  } | null>(null);
+  const [refundLoading, setRefundLoading] = useState(false);
 
   const suspendMutation = useSuspendUser({
     mutation: {
@@ -75,6 +80,28 @@ export default function AdminUsers() {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally {
       setDeductLoading(false);
+    }
+  };
+
+  const handleRefund = async (type: "plan" | "subscription") => {
+    if (!refundModalUser) return;
+    setRefundLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${refundModalUser.id}/refund`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Erreur");
+      queryClient.invalidateQueries({ queryKey: getGetAdminUsersQueryKey() });
+      toast({ title: "Remboursement effectué", description: data.message });
+      setRefundModalUser(null);
+    } catch (err: any) {
+      toast({ title: "Erreur", description: err.message, variant: "destructive" });
+    } finally {
+      setRefundLoading(false);
     }
   };
 
@@ -165,21 +192,39 @@ export default function AdminUsers() {
                       <Badge variant="success"><CheckCircle className="w-3 h-3 mr-1" /> Actif</Badge>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <Button size="sm" variant="outline" onClick={() => setBonusModalUser({id: user.id, username: user.username})}>
-                      <Gift className="w-4 h-4 mr-1" /> Bonus
-                    </Button>
-                    <Button size="sm" variant="outline" className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => setDeductModalUser({id: user.id, username: user.username})}>
-                      <MinusCircle className="w-4 h-4 mr-1" /> Déduire
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant={user.isSuspended ? "default" : "destructive"}
-                      onClick={() => handleToggleSuspend(user.id, user.isSuspended)}
-                      disabled={user.isAdmin}
-                    >
-                      {user.isSuspended ? "Réactiver" : "Suspendre"}
-                    </Button>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex flex-wrap gap-1.5 justify-end">
+                      <Button size="sm" variant="outline" onClick={() => setBonusModalUser({id: user.id, username: user.username})}>
+                        <Gift className="w-4 h-4 mr-1" /> Bonus
+                      </Button>
+                      <Button size="sm" variant="outline" className="border-rose-500/40 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" onClick={() => setDeductModalUser({id: user.id, username: user.username})}>
+                        <MinusCircle className="w-4 h-4 mr-1" /> Déduire
+                      </Button>
+                      {((user as any).activePlanId || (user as any).subscriptionActive) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-cyan-500/40 text-cyan-400 hover:bg-cyan-500/10 hover:text-cyan-300"
+                          onClick={() => setRefundModalUser({
+                            id: user.id,
+                            username: user.username,
+                            planName: user.planName ?? null,
+                            planDeposit: (user as any).planDepositRequired ?? null,
+                            subscriptionActive: (user as any).subscriptionActive ?? false,
+                          })}
+                        >
+                          <RotateCcw className="w-4 h-4 mr-1" /> Rembourser
+                        </Button>
+                      )}
+                      <Button 
+                        size="sm" 
+                        variant={user.isSuspended ? "default" : "destructive"}
+                        onClick={() => handleToggleSuspend(user.id, user.isSuspended)}
+                        disabled={user.isAdmin}
+                      >
+                        {user.isSuspended ? "Réactiver" : "Suspendre"}
+                      </Button>
+                    </div>
                   </td>
                 </tr>
                 );
@@ -210,6 +255,66 @@ export default function AdminUsers() {
             <MinusCircle className="w-4 h-4 mr-2" /> Déduire
           </Button>
         </form>
+      </Modal>
+
+      <Modal isOpen={!!refundModalUser} onClose={() => setRefundModalUser(null)} title={`Rembourser — ${refundModalUser?.username}`}>
+        <div className="space-y-4">
+          <p className="text-sm text-zinc-400">
+            Choisissez ce que vous souhaitez rembourser. Le montant sera crédité directement sur le solde de l'utilisateur.
+          </p>
+
+          <div className="space-y-2">
+            {refundModalUser?.planName && refundModalUser?.planDeposit != null && (
+              <div className="flex items-center justify-between p-4 rounded-xl border border-amber-500/25 bg-amber-500/8">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <Crown className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Plan {refundModalUser.planName}</p>
+                    <p className="text-xs text-zinc-400">Dépôt initial : <span className="text-amber-400 font-bold">${refundModalUser.planDeposit}</span></p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-amber-500/20 text-amber-400 border border-amber-500/40 hover:bg-amber-500/30"
+                  onClick={() => handleRefund("plan")}
+                  isLoading={refundLoading}
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Rembourser
+                </Button>
+              </div>
+            )}
+
+            {refundModalUser?.subscriptionActive && (
+              <div className="flex items-center justify-between p-4 rounded-xl border border-cyan-500/25 bg-cyan-500/8">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-cyan-500/20 flex items-center justify-center">
+                    <Zap className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Abonnement Retrait Rapide</p>
+                    <p className="text-xs text-zinc-400">Montant : <span className="text-cyan-400 font-bold">$15</span></p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  className="bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 hover:bg-cyan-500/30"
+                  onClick={() => handleRefund("subscription")}
+                  isLoading={refundLoading}
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Rembourser
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <p className="text-[11px] text-zinc-600 text-center">
+            Le plan ou l'abonnement sera annulé et le montant crédité immédiatement.
+          </p>
+        </div>
       </Modal>
     </AppLayout>
   );

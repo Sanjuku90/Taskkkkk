@@ -308,7 +308,7 @@ export default function AdminNotifications() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="flex items-start gap-3 p-3.5 rounded-xl border border-white/6 bg-white/3 group"
+                    className="flex items-start gap-3 p-3.5 rounded-xl border border-white/6 bg-white/3"
                   >
                     <div className={cn(
                       "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5",
@@ -338,7 +338,7 @@ export default function AdminNotifications() {
                           )}
                           <button
                             onClick={() => deleteMutation.mutate(notif.id)}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
+                            className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                             title="Supprimer"
                           >
                             <Trash2 className="w-3 h-3" />

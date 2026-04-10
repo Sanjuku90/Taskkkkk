@@ -62,6 +62,7 @@ router.get("/users", async (req, res) => {
   const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
   const plans = await db.select().from(plansTable);
   const planMap = new Map(plans.map(p => [p.id, p.name]));
+  const planDepositMap = new Map(plans.map(p => [p.id, Number(p.depositRequired)]));
 
   const allTxs = await db.select().from(transactionsTable).where(eq(transactionsTable.status, "approved"));
 
@@ -76,6 +77,8 @@ router.get("/users", async (req, res) => {
       isSuspended: u.isSuspended,
       activePlanId: u.activePlanId,
       planName: u.activePlanId ? (planMap.get(u.activePlanId) ?? null) : null,
+      planDepositRequired: u.activePlanId ? (planDepositMap.get(u.activePlanId) ?? null) : null,
+      subscriptionActive: u.subscriptionActive,
       registrationIp: u.registrationIp ?? null,
       createdAt: u.createdAt.toISOString(),
       totalDeposited: userTxs.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0),
@@ -176,6 +179,62 @@ router.post("/users/:userId/deduct", async (req, res) => {
   }).where(eq(usersTable.id, userId));
 
   res.json({ message: `$${parsed} déduit du solde`, newBalance });
+});
+
+router.post("/users/:userId/refund", async (req, res) => {
+  if (!await requireAdmin(req, res)) return;
+
+  const userId = parseInt(req.params.userId);
+  if (isNaN(userId)) {
+    res.status(400).json({ error: "Utilisateur invalide" });
+    return;
+  }
+
+  const { type } = req.body;
+  if (type !== "plan" && type !== "subscription") {
+    res.status(400).json({ error: "type doit être 'plan' ou 'subscription'" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "Utilisateur introuvable" });
+    return;
+  }
+
+  if (type === "plan") {
+    if (!user.activePlanId) {
+      res.status(400).json({ error: "Cet utilisateur n'a pas de plan actif" });
+      return;
+    }
+    const [plan] = await db.select().from(plansTable).where(eq(plansTable.id, user.activePlanId)).limit(1);
+    if (!plan) {
+      res.status(404).json({ error: "Plan introuvable" });
+      return;
+    }
+    const refundAmount = Number(plan.depositRequired);
+    await db.update(usersTable).set({
+      activePlanId: null,
+      planActivatedAt: null,
+      balance: sql`${usersTable.balance} + ${refundAmount}`,
+    }).where(eq(usersTable.id, userId));
+    res.json({ message: `Plan ${plan.name} remboursé. $${refundAmount} crédité au solde.`, refundAmount });
+    return;
+  }
+
+  if (type === "subscription") {
+    if (!user.subscriptionActive) {
+      res.status(400).json({ error: "Cet utilisateur n'a pas d'abonnement actif" });
+      return;
+    }
+    const refundAmount = 15;
+    await db.update(usersTable).set({
+      subscriptionActive: false,
+      balance: sql`${usersTable.balance} + ${refundAmount}`,
+    }).where(eq(usersTable.id, userId));
+    res.json({ message: `Abonnement remboursé. $${refundAmount} crédité au solde.`, refundAmount });
+    return;
+  }
 });
 
 router.get("/transactions", async (req, res) => {
