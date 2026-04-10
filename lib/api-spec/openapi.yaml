@@ -485,6 +485,9 @@ components:
           nullable: true
         subscriptionActive:
           type: boolean
+        subscriptionActivatedAt:
+          type: string
+          nullable: true
         isSubscriptionSelected:
           type: boolean
         createdAt:

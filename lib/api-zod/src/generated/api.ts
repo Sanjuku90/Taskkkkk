@@ -44,6 +44,7 @@ export const LoginResponse = zod.object({
     activePlanId: zod.number().nullish(),
     planActivatedAt: zod.string().nullish(),
     subscriptionActive: zod.boolean(),
+    subscriptionActivatedAt: zod.string().nullish(),
     isSubscriptionSelected: zod.boolean(),
     createdAt: zod.string().optional(),
   }),
@@ -70,6 +71,7 @@ export const GetMeResponse = zod.object({
   activePlanId: zod.number().nullish(),
   planActivatedAt: zod.string().nullish(),
   subscriptionActive: zod.boolean(),
+  subscriptionActivatedAt: zod.string().nullish(),
   isSubscriptionSelected: zod.boolean(),
   createdAt: zod.string().optional(),
 });

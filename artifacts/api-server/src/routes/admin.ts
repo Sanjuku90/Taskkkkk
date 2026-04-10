@@ -253,6 +253,7 @@ router.post("/users/:userId/refund", async (req, res) => {
     const refundAmount = lastSubTx ? Number(lastSubTx.amount) : (user.isSubscriptionSelected ? 9 : 40);
     await db.update(usersTable).set({
       subscriptionActive: false,
+      subscriptionActivatedAt: null,
       balance: sql`${usersTable.balance} + ${refundAmount}`,
     }).where(eq(usersTable.id, userId));
     await db.insert(transactionsTable).values({
@@ -419,6 +420,7 @@ router.post("/transactions/:txId/validate", async (req, res) => {
     } else if (tx.type === "subscription") {
       await db.update(usersTable).set({
         subscriptionActive: true,
+        subscriptionActivatedAt: new Date(),
       }).where(eq(usersTable.id, tx.userId));
     }
 

@@ -6,8 +6,35 @@ import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, Crown, Zap, Shield, Star, TrendingUp, Lock, Copy, RefreshCw, Clock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+
+const SUBSCRIPTION_DURATION_DAYS = 30;
+
+function useSubscriptionCountdown(activatedAt: string | null | undefined) {
+  const [remaining, setRemaining] = useState<{ days: number; hours: number; minutes: number; seconds: number; expired: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!activatedAt) { setRemaining(null); return; }
+    const calc = () => {
+      const expiry = new Date(activatedAt).getTime() + SUBSCRIPTION_DURATION_DAYS * 24 * 60 * 60 * 1000;
+      const diff = expiry - Date.now();
+      if (diff <= 0) { setRemaining({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true }); return; }
+      setRemaining({
+        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+        seconds: Math.floor((diff % (1000 * 60)) / 1000),
+        expired: false,
+      });
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [activatedAt]);
+
+  return remaining;
+}
 
 const TIER_STYLES: Record<number, { gradient: string; border: string; glow: string; badge?: string }> = {
   0: { gradient: "from-zinc-700/30 to-transparent", border: "border-white/8", glow: "" },
@@ -46,6 +73,7 @@ export default function Plans() {
   const subscriptionActive = user?.subscriptionActive ?? false;
   const isSelected = user?.isSubscriptionSelected ?? false;
   const subscriptionPrice = isSelected ? 9 : 40;
+  const countdown = useSubscriptionCountdown(subscriptionActive ? user?.subscriptionActivatedAt : null);
 
   const activateMutation = useActivatePlan({
     mutation: {
@@ -188,9 +216,35 @@ export default function Plans() {
                 )}
               </div>
               {subscriptionActive ? (
-                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
-                  <Check className="w-4 h-4" />
-                  Abonnement actif
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-sm font-semibold">
+                    <Check className="w-4 h-4" />
+                    Abonnement actif
+                  </div>
+                  {countdown && !countdown.expired && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-black/30 border border-white/8">
+                      <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="text-xs text-zinc-500 mr-1">Expire dans :</span>
+                      <div className="flex items-center gap-1.5 font-mono text-sm font-bold">
+                        <span className="px-2 py-0.5 rounded-lg bg-white/8 text-cyan-300">{String(countdown.days).padStart(2, "0")}<span className="text-[9px] text-zinc-600 ml-0.5 font-normal">j</span></span>
+                        <span className="text-zinc-700">:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-white/8 text-cyan-300">{String(countdown.hours).padStart(2, "0")}<span className="text-[9px] text-zinc-600 ml-0.5 font-normal">h</span></span>
+                        <span className="text-zinc-700">:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-white/8 text-cyan-300">{String(countdown.minutes).padStart(2, "0")}<span className="text-[9px] text-zinc-600 ml-0.5 font-normal">m</span></span>
+                        <span className="text-zinc-700">:</span>
+                        <span className="px-2 py-0.5 rounded-lg bg-white/8 text-cyan-300">{String(countdown.seconds).padStart(2, "0")}<span className="text-[9px] text-zinc-600 ml-0.5 font-normal">s</span></span>
+                      </div>
+                    </div>
+                  )}
+                  {countdown?.expired && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold">
+                      <Clock className="w-3.5 h-3.5" />
+                      Abonnement expiré — veuillez renouveler
+                    </div>
+                  )}
+                  {!countdown && (
+                    <div className="text-xs text-zinc-600 px-1">Durée : 30 jours</div>
+                  )}
                 </div>
               ) : hasPendingSubscription ? (
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-sm font-semibold">

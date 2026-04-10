@@ -96,6 +96,7 @@ router.post("/register", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
       subscriptionActive: user.subscriptionActive,
       isSubscriptionSelected: user.isSubscriptionSelected,
+      subscriptionActivatedAt: user.subscriptionActivatedAt?.toISOString() ?? null,
       referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
@@ -166,6 +167,7 @@ router.post("/login", rateLimit(10, 15 * 60 * 1000), async (req, res) => {
       planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
       subscriptionActive: user.subscriptionActive,
       isSubscriptionSelected: user.isSubscriptionSelected,
+      subscriptionActivatedAt: user.subscriptionActivatedAt?.toISOString() ?? null,
       referralCode: user.referralCode,
       createdAt: user.createdAt.toISOString(),
     },
@@ -203,6 +205,7 @@ router.get("/me", async (req, res) => {
     planActivatedAt: user.planActivatedAt?.toISOString() ?? null,
     subscriptionActive: user.subscriptionActive,
       isSubscriptionSelected: user.isSubscriptionSelected,
+      subscriptionActivatedAt: user.subscriptionActivatedAt?.toISOString() ?? null,
     referralCode: user.referralCode,
     createdAt: user.createdAt.toISOString(),
   });

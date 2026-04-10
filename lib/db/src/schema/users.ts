@@ -16,6 +16,7 @@ export const usersTable = pgTable("users", {
   referralCode: varchar("referral_code", { length: 16 }).unique(),
   referredById: integer("referred_by_id"),
   subscriptionActive: boolean("subscription_active").notNull().default(false),
+  subscriptionActivatedAt: timestamp("subscription_activated_at"),
   isSubscriptionSelected: boolean("is_subscription_selected").notNull().default(false),
   lastLoginBonusDate: text("last_login_bonus_date"),
   claimedVipBonuses: text("claimed_vip_bonuses").default("[]"),
