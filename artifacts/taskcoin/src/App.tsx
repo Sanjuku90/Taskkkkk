@@ -18,6 +18,7 @@ import AdminTransactions from "@/pages/admin/transactions";
 import AdminSettings from "@/pages/admin/settings";
 import AdminBonusTasks from "@/pages/admin/bonus-tasks";
 import AdminBonusCatalog from "@/pages/admin/bonus-catalog";
+import AdminNotifications from "@/pages/admin/notifications";
 import Referral from "@/pages/referral";
 import Profile from "@/pages/profile";
 import Rules from "@/pages/rules";
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/admin/settings" component={AdminSettings} />
       <Route path="/admin/bonus-tasks" component={AdminBonusTasks} />
       <Route path="/admin/bonus-catalog" component={AdminBonusCatalog} />
+      <Route path="/admin/notifications" component={AdminNotifications} />
       
       <Route component={NotFound} />
     </Switch>

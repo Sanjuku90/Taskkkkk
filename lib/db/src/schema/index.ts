@@ -5,3 +5,4 @@ export * from "./transactions";
 export * from "./settings";
 export * from "./bonuses";
 export * from "./games";
+export * from "./notifications";

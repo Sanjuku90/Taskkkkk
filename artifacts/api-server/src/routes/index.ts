@@ -10,6 +10,7 @@ import gamesRouter from "./games";
 import settingsRouter from "./settings";
 import transfersRouter from "./transfers";
 import vipRouter from "./vip";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -25,5 +26,6 @@ router.use("/bonuses", bonusesRouter);
 router.use("/games", gamesRouter);
 router.use("/settings", settingsRouter);
 router.use("/vip", vipRouter);
+router.use("/notifications", notificationsRouter);
 
 export default router;
