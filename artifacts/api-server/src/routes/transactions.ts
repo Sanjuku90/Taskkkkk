@@ -48,6 +48,19 @@ router.post("/", async (req, res) => {
 
   const { type, amount, currency, txHash, walletAddress } = parsed.data;
 
+  if (type === "subscription") {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId)).limit(1);
+    if (!user) {
+      res.status(401).json({ error: "User not found" });
+      return;
+    }
+    const expectedAmount = user.isSubscriptionSelected ? 9 : 40;
+    if (amount !== expectedAmount) {
+      res.status(400).json({ error: `Montant incorrect. Le montant attendu pour votre abonnement est de $${expectedAmount}.` });
+      return;
+    }
+  }
+
   if (type === "withdrawal") {
     const withdrawalsBlocked = await getSetting("withdrawals_blocked", "false");
     if (withdrawalsBlocked === "true") {
